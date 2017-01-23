@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = datahub
+
+[report]
+ignore_errors = True
