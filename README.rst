@@ -1,3 +1,9 @@
+.. image:: https://coveralls.io/repos/github/eggclub-org/datahub/badge.svg?branch=master
+:target: https://coveralls.io/github/eggclub-org/datahub?branch=master
+
+.. image:: https://travis-ci.org/eggclub-org/datahub.svg?branch=master
+    :target: https://travis-ci.org/eggclub-org/datahub
+
 ===============================
 DataHub
 ===============================
