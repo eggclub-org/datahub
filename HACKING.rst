@@ -1,4 +1,4 @@
-datahub Style Commandments
+Datahub Style Commandments
 ===============================================
 
-Read the OpenStack Style Commandments http://docs.openstack.org/developer/hacking/
+Read the Python Style Commandments https://www.python.org/dev/peps/pep-0008/

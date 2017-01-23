@@ -55,8 +55,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'datahub Release Notes'
-copyright = u'2016, OpenStack Foundation'
+project = u'DataHub Release Notes'
+copyright = u'2017, EGG Community'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

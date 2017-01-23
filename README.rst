@@ -1,17 +1,15 @@
 ===============================
-datahub
+DataHub
 ===============================
 
 EGG Datahub Crawler Project
 
-Please fill here a long description which must be at least 3 lines wrapped on
-80 cols, so that distribution package maintainers can use it in their packages.
-Note that this is a hard requirement.
+Just for fun crawling side-project for EGG Community!
 
 * Free software: Apache license
-* Documentation: http://docs.openstack.org/developer/datahub
-* Source: http://git.openstack.org/cgit/openstack/datahub
-* Bugs: http://bugs.launchpad.net/datahub
+* Documentation: TBD
+* Source: https://github.com/eggclub-org/datahub
+* Bugs: https://github.com/eggclub-org/datahub/issues
 
 Features
 --------
