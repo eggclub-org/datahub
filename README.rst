@@ -3,6 +3,9 @@
 
 .. image:: https://coveralls.io/repos/github/eggclub-org/datahub/badge.svg?branch=master
     :target: https://coveralls.io/github/eggclub-org/datahub?branch=master
+    
+.. image:: https://img.shields.io/badge/license-Apache--2.0-blue.svg
+    :target: https://raw.githubusercontent.com/eggclub-org/datahub/master/LICENSE
 
 ===============================
 DataHub
