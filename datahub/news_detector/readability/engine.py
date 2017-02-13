@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -12,17 +10,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
-test_datahub
-----------------------------------
-
-Tests for `datahub` module.
-"""
-
-from datahub.tests import base
+from datahub.news_detector import engine_base
 
 
-class TestDatahub(base.BaseTestCase):
+class Engine(engine_base.Engine):
 
-    def test_something(self):
+    def load_targets(self, context, targets):
         pass

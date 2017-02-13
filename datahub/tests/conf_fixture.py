@@ -1,4 +1,5 @@
-# Copyright 2017 EGG Club.
+# Copyright 2010 United States Government as represented by the
+# Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,14 +14,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_config import cfg
+import fixtures
 
-from datahub.conf import detector
-from datahub.conf import paths
-from datahub.conf import services
+import datahub.conf
 
-CONF = cfg.CONF
+CONF = datahub.conf.CONF
 
-detector.register_opts(CONF)
-paths.register_opts(CONF)
-services.register_opts(CONF)
+
+class ConfFixture(fixtures.Fixture):
+    """Fixture to manage global conf settings."""
+
+    def _setUp(self):
+        CONF.set_default('host', 'fake-dh')
+        self.addCleanup(CONF.reset)

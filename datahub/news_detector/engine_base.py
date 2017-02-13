@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -12,17 +10,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
-test_datahub
-----------------------------------
-
-Tests for `datahub` module.
-"""
-
-from datahub.tests import base
+import abc
+import six
 
 
-class TestDatahub(base.BaseTestCase):
+@six.add_metaclass(abc.ABCMeta)
+class Engine(object):
 
-    def test_something(self):
-        pass
+    """Base class for news detector engine"""
+
+    @abc.abstractmethod
+    def load_targets(self, context, targets):
+        """
+        Load targets into new detector engine.
+
+        :param context: MQ Context.
+        :param targets: List of news URL target object.
+        """

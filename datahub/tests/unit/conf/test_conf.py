@@ -21,7 +21,7 @@ from datahub.conf import opts
 from datahub.tests import base
 
 
-class ConfTestCase(base.TestCase):
+class ConfTestCase(base.BaseTestCase):
 
     def test_list_opts(self):
         for group, opt_list in opts.list_opts():
