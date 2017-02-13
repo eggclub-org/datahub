@@ -10,22 +10,32 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import log as logging
 from oslo_utils import importutils
 
 import datahub.conf
 
-DTREE_ENGINE = 'datahub.detector.dtree.engine.Engine'
-READABILITY_ENGINE = 'datahub.detector.readability.engine.Engine'
+DTREE_ENGINE = 'datahub.news_detector.dtree.engine.Engine'
+READABILITY_ENGINE = 'datahub.news_detector.readability.engine.Engine'
 
+LOG = logging.getLogger(__name__)
 CONF = datahub.conf.CONF
 
 
 def engine():
-    engine_conf = CONF.detector.engine
-    if engine_conf is 'd-tree':
+    engine_class = None
+    engine_conf = CONF.news_detector.engine
+    if engine_conf == 'd-tree':
         engine_class = DTREE_ENGINE
-    elif engine_conf is 'readability':
+    elif engine_conf == 'readability':
         engine_class = READABILITY_ENGINE
 
-    cls = importutils.import_class(engine_class)
+    if engine_class:
+        cls = importutils.import_class(engine_class)
+    else:
+        LOG.error('The configuration options for news detector engine is '
+                  'wrong! Please identify the correct news detector engine in '
+                  'supported engine list.')
+        raise NotImplementedError
+
     return cls()

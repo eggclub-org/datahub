@@ -12,14 +12,15 @@
 
 from oslo_config import cfg
 
-detector_group = cfg.OptGroup(name='detector',
-                              title='Options for the datahub detector service')
+detector_group = cfg.OptGroup(name='news_detector',
+                              title='Options for the datahub news_detector'
+                                    'service')
 
 detector_engine_opts = [
     cfg.StrOpt('engine',
                default='d-tree',
-               help='Decide which engine the datahub detector will use for'
-                    'auto-detect article format. The list of option is:'
+               help='Decide which engine the datahub news_detector will use'
+                    'for auto-detect article format. The list of option is:'
                     'd-tree, hybrid, readability'
                     'Default is d-tree engine.'),
 ]
