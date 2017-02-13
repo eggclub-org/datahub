@@ -1,0 +1,10 @@
+class Article (object):
+    article_id = None
+    title = None
+    summary = None
+    content = None
+    date = None
+    url = None
+    category = None
+    source = None
+    keywords = None
