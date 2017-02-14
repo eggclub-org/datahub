@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from url_fetcher import UrlFetcher
 from extractor import Extractor
+from url_fetcher import UrlFetcher
 
 
 def extract_url(url, depth):

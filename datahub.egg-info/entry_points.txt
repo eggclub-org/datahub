@@ -1,0 +1,3 @@
+[oslo.config.opts]
+datahub.conf = datahub.conf.opts:list_opts
+

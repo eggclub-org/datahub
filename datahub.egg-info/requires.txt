@@ -1,0 +1,9 @@
+pbr>=1.8
+eventlet>=0.20.1
+oslo.config
+scrapy>=1.3.0
+newspaper3k>=0.0.9.8
+oslo.utils>=3.18.0
+oslo.messaging>=5.17.0
+oslo.context>=2.12.0
+oslo.serialization>=1.10.0
