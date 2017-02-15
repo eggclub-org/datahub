@@ -20,12 +20,49 @@
 
 import scrapy
 
+ORIGINAL = 0
+CLONE = 1
+TRANSLATED = 2
 
-class VnexpressItem(scrapy.Item):
-    url = scrapy.Field()
-    date = scrapy.Field()
-    intro = scrapy.Field()
+
+class NewsItem(scrapy.Item):
+    # short title of article, required
     title = scrapy.Field()
+
+    # author(s), nullable
+    author = scrapy.Field()
+
+    # 0: Original article, 1: Cloned, 2: Translated version, default is 0
+    aflag = scrapy.Field()
+
+    # Article's published time in epoch format, required
+    publish_date = scrapy.Field()
+
+    # Article category, nullable
+    category = scrapy.Field()
+
+    # Summary of article, nullable
+    summary = scrapy.Field()
+
+    # Main content of article, required
     content = scrapy.Field()
-    comments = scrapy.Field()
+
+    # Image's URL of article, nullable
+    url_image = scrapy.Field()
+
+    # Keyword, tags of article which was identified by article's author(s).
+    # Or top keyword identified by NLP tools
+    # nullable
     tags = scrapy.Field()
+
+    # Article URL, required
+    url_page = scrapy.Field()
+
+    # Article language, nullable
+    language = scrapy.Field()
+
+    # Article rating, nullable
+    ratings = scrapy.Field()
+
+    # Article comments, nullable
+    comments = scrapy.Field()
