@@ -10,10 +10,28 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from newspaper import Article
+from newspaper import Source
+
 from datahub.news_detector import engine_base
+from datahub.news_detector.rule.config import SourceConfig
+
+import datahub.conf
+
+CONF = datahub.conf.CONF
 
 
 class Engine(engine_base.Engine):
 
-    def load_targets(self, context, targets):
-        pass
+    def __init__(self):
+        self.config = SourceConfig()
+
+    def detect(self, context, target_url, is_article=False):
+        if is_article:
+            article = Article(target_url, config=self.config)
+            article.download()
+            article.parse()
+        else:
+            src = Source(target_url, config=self.config)
+            src.download()
+            src.parse()

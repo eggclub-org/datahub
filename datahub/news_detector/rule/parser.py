@@ -10,10 +10,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from datahub.news_detector import engine_base
+from newspaper import parsers
 
 
-class Engine(engine_base.Engine):
+class Parser(parsers.Parser):
 
-    def detect(self, context, target):
+    @classmethod
+    def get_xpath(cls, node):
         pass

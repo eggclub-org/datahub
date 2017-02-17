@@ -20,10 +20,10 @@ class Engine(object):
     """Base class for news detector engine"""
 
     @abc.abstractmethod
-    def load_targets(self, context, targets):
+    def detect(self, context, target):
         """
         Load targets into new detector engine.
 
         :param context: MQ Context.
-        :param targets: List of news URL target object.
+        :param target: List of news URL target object.
         """

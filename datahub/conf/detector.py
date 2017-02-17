@@ -21,7 +21,7 @@ detector_engine_opts = [
                default='d-tree',
                help='Decide which engine the datahub news_detector will use'
                     'for auto-detect article format. The list of option is:'
-                    'd-tree, hybrid, readability'
+                    'd-tree, hybrid, rule'
                     'Default is d-tree engine.'),
 ]
 
