@@ -17,6 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.append(os.path.abspath('../_themes'))
+sys.path.append(os.path.abspath('../man'))
 # -- General configuration ----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -32,6 +33,11 @@ html_theme = 'kr'
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
 # text edit cycles.
 # execute "export SPHINX_DEBUG=1" in your terminal to disable
+
+# man_pages = [
+#     ('../man/datahub-master', 'datahub-master', u'Crawler master controller',
+#      [u'Datahub'], 1),
+# ]
 
 # The suffix of source filenames.
 source_suffix = '.rst'
