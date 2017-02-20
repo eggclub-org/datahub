@@ -13,7 +13,6 @@
 from newspaper import extractors
 import re
 
-
 RE_LANG = r'^[A-Za-z]{2}$'
 
 
