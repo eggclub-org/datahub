@@ -13,6 +13,7 @@
 import copy
 from newspaper import article
 from newspaper.cleaners import DocumentCleaner
+from newspaper import source
 
 from datahub.news_detector.rule.extractor import VideoExtractor
 
@@ -39,7 +40,7 @@ class Article(article.Article):
             # `parse` call failed, return nothing
             return
 
-        # TODO: Fix this, sync in our fix_url() method
+        # TODO(hieulq): Fix this, sync in our fix_url() method
         parse_candidate = self.get_parse_candidate()
         self.link_hash = parse_candidate.link_hash  # MD5
 
@@ -100,3 +101,32 @@ class Article(article.Article):
     def process(self):
         self.download()
         self.parse()
+
+
+class Source(source.Source):
+
+    def __init__(self, url, config=None, extractor=None, **kwargs):
+        super(Source, self).__init__(url, config, **kwargs)
+        self.extractor = extractor
+
+    def set_categories(self):
+        urls = self._get_category_urls(self.domain)
+        # de-duplicate URL in result
+        seen = set()
+        urls = [url for url in urls if url not in seen and not seen.add(url)]
+        self.categories = [source.Category(url=url) for url in urls]
+
+    def process(self):
+        self.download()
+        self.parse()
+
+        self.set_categories()
+        self.download_categories()  # mthread
+        self.parse_categories()
+
+        self.set_feeds()
+        self.download_feeds()  # mthread
+        # TODO: self.parse_feeds()  # regex for now
+
+        self.generate_articles()
+

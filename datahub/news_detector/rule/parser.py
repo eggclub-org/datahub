@@ -10,15 +10,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from bs4 import UnicodeDammit
+from copy import deepcopy
+from html.parser import HTMLParser
+
 import lxml.etree
 import lxml.html
 import lxml.html.clean
 import re
 import traceback
-from html.parser import HTMLParser
-
-from bs4 import UnicodeDammit
-from copy import deepcopy
 
 from newspaper import parsers
 from newspaper import text

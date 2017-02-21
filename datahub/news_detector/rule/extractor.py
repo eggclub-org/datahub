@@ -197,7 +197,7 @@ class Extractor(extractors.ContentExtractor):
 
         return uniqify_list(authors)
 
-        # TODO Method 2: Search raw html for a by-line
+        # TODO(hieulq) Method 2: Search raw html for a by-line
         # match = re.search('By[\: ].*\\n|From[\: ].*\\n', html)
         # try:
         #    # Don't let zone be too long
@@ -361,7 +361,7 @@ class Extractor(extractors.ContentExtractor):
             try:
                 datetime_obj = date_parser(date_str)
                 return datetime_obj
-            except:
+            except Exception:
                 # near all parse failures are due to URL dates without a day
                 # specifier, e.g. /2014/04/
                 return None
@@ -374,15 +374,24 @@ class Extractor(extractors.ContentExtractor):
                 return datetime_obj
 
         PUBLISH_DATE_TAGS = [
-            {'attribute': 'property', 'value': 'rnews:datePublished', 'content': 'content'},
-            {'attribute': 'property', 'value': 'article:published_time', 'content': 'content'},
-            {'attribute': 'name', 'value': 'OriginalPublicationDate', 'content': 'content'},
-            {'attribute': 'itemprop', 'value': 'datePublished', 'content': 'datetime'},
-            {'attribute': 'property', 'value': 'og:published_time', 'content': 'content'},
-            {'attribute': 'name', 'value': 'article_date_original', 'content': 'content'},
-            {'attribute': 'name', 'value': 'publication_date', 'content': 'content'},
-            {'attribute': 'name', 'value': 'sailthru.date', 'content': 'content'},
-            {'attribute': 'name', 'value': 'PublishDate', 'content': 'content'},
+            {'attribute': 'property', 'value': 'rnews:datePublished',
+             'content': 'content'},
+            {'attribute': 'property', 'value': 'article:published_time',
+             'content': 'content'},
+            {'attribute': 'name', 'value': 'OriginalPublicationDate',
+             'content': 'content'},
+            {'attribute': 'itemprop', 'value': 'datePublished',
+             'content': 'datetime'},
+            {'attribute': 'property', 'value': 'og:published_time',
+             'content': 'content'},
+            {'attribute': 'name', 'value': 'article_date_original',
+             'content': 'content'},
+            {'attribute': 'name', 'value': 'publication_date',
+             'content': 'content'},
+            {'attribute': 'name', 'value': 'sailthru.date',
+             'content': 'content'},
+            {'attribute': 'name', 'value': 'PublishDate',
+             'content': 'content'},
         ]
         for known_meta_tag in PUBLISH_DATE_TAGS:
             meta_tags = self.parser.getElementsByTag(
@@ -471,3 +480,20 @@ class Extractor(extractors.ContentExtractor):
             if top_node is None:
                 top_node = e
         return top_node
+
+    def _get_urls(self, doc, titles):
+        """Return a list of urls or a list of (url, title_text) tuples
+        if specified.
+        """
+        if doc is None:
+            return []
+
+        a_kwargs = {'tag': 'a'}
+        a_tags = self.parser.getElementsByTag(doc, **a_kwargs)
+
+        # TODO(hieulq): this should be refactored! We should have a seperate
+        # method which siphones the titles our of a list of <a> tags.
+        if titles:
+            return [(a.ele.get('href'), a.ele.text) for a in a_tags
+                    if a.ele.get('href')]
+        return [a.ele.get('href') for a in a_tags if a.ele.get('href')]
