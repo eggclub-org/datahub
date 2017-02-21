@@ -10,10 +10,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from newspaper import Article
 from newspaper import Source
 
 from datahub.news_detector import engine_base
+from datahub.news_detector.rule.article import Article
 from datahub.news_detector.rule.config import SourceConfig
 from datahub.news_detector.rule.extractor import Extractor
 
@@ -30,17 +30,17 @@ class Engine(engine_base.Engine):
 
     def detect(self, context, target_url, is_article=False):
         if is_article:
-            article = Article(target_url, config=self.config)
-            article.extractor = self.extractor
-            article.download()
-            article.build()
+            article = Article(target_url, config=self.config,
+                              extractor=self.extractor)
+            article.process()
+            return article
         else:
             src = Source(target_url, config=self.config)
             src.extractor = self.extractor
             src.download()
             src.parse()
 
-TARGET = 'http://giaitri.vnexpress.net'
+TARGET = 'http://vnexpress.net'
 # ARTICLE = 'http://suckhoe.vnexpress.net/tin-tuc/dinh-duong/uong-nuoc-lanh' \
 #          '-giup-giam-can-3536234.html'
 ARTICLE = 'http://www.baomoi.com/ios-cach-khac-phuc-van-de-dinh-ma-doc-tu' \
@@ -52,7 +52,8 @@ ARTICLE = 'http://www.baomoi.com/ios-cach-khac-phuc-van-de-dinh-ma-doc-tu' \
 def main():
 
     eg = Engine()
-    eg.detect(None, ARTICLE, True)
+    src = eg.detect(None, ARTICLE, True)
+    print("FIN")
 
 
 if __name__ == '__main__':

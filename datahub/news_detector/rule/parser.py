@@ -21,6 +21,7 @@ from bs4 import UnicodeDammit
 from copy import deepcopy
 
 from newspaper import parsers
+from newspaper import text
 
 
 class ObjectParser(object):
@@ -29,8 +30,18 @@ class ObjectParser(object):
         self.xpath = xpath
         if text:
             self.text = text
+        elif isinstance(ele, lxml.html.HtmlComment):
+            self.text = ele.text
         else:
             self.text = Parser.getText(ele)
+
+    def clear(self):
+        self.ele.clear()
+        self.xpath = None
+        self.text = None
+
+    def insert(self, idx, element):
+        self.ele.insert(idx, element)
 
 
 class Parser(parsers.Parser):
@@ -41,20 +52,37 @@ class Parser(parsers.Parser):
         regexp_namespace = "http://exslt.org/regular-expressions"
         items = node.xpath(expression, namespaces={'re': regexp_namespace})
         for item in items:
-            result.append(ObjectParser(None, expression, item))
+            if isinstance(item, str):
+                result.append(ObjectParser(None, expression, item))
+            else:
+                result.append(ObjectParser(item, expression))
         return result
 
     @classmethod
     def drop_tag(cls, nodes):
         if isinstance(nodes, list):
             for node in nodes:
-                node.drop_tag()
+                node.ele.drop_tag()
         else:
-            nodes.drop_tag()
+            nodes.ele.drop_tag()
+
+    @classmethod
+    def getText(cls, node):
+        if isinstance(node, ObjectParser):
+            node = node.ele
+        txts = [i for i in node.itertext()]
+        return text.innerTrim(' '.join(txts).strip())
 
     @classmethod
     def css_select(cls, node, selector):
-        return node.cssselect(selector)
+        result = []
+        if isinstance(node, ObjectParser):
+            node = node.ele
+        tree = lxml.etree.ElementTree(node)
+        items = node.cssselect(selector)
+        for item in items:
+            result.append(ObjectParser(item, tree.getpath(item)))
+        return result
 
     @classmethod
     def get_unicode_html(cls, html):
@@ -103,6 +131,8 @@ class Parser(parsers.Parser):
         """`decode` is needed at the end because `etree.tostring`
         returns a python bytestring
         """
+        if isinstance(node, ObjectParser):
+            node = node.ele
         return lxml.etree.tostring(node, method='html').decode()
 
     @classmethod
@@ -125,6 +155,8 @@ class Parser(parsers.Parser):
     def getElementsByTag(
             cls, node, tag=None, attr=None, value=None, childs=False):
         result = []
+        if isinstance(node, ObjectParser):
+            node = node.ele
         NS = "http://exslt.org/regular-expressions"
         # selector = tag or '*'
         selector = 'descendant-or-self::%s' % (tag or '*')
@@ -150,7 +182,7 @@ class Parser(parsers.Parser):
 
     @classmethod
     def childNodesWithText(cls, node):
-        root = node
+        root = node.ele
         # create the first text node
         # if we have some text in the node
         if root.text:
@@ -177,6 +209,8 @@ class Parser(parsers.Parser):
 
     @classmethod
     def getChildren(cls, node):
+        if isinstance(node, ObjectParser):
+            node = node.ele
         return node.getchildren()
 
     @classmethod
@@ -199,31 +233,50 @@ class Parser(parsers.Parser):
 
     @classmethod
     def getComments(cls, node):
-        return node.xpath('//comment()')
+        result = []
+        tree = lxml.etree.ElementTree(node)
+        items = node.xpath('//comment()')
+        for item in items:
+            result.append(ObjectParser(item, tree.getpath(item)))
+        return result
+
+    @classmethod
+    def get_parent_xpath(cls, xpath):
+        if "@" in xpath:
+            xpath = xpath.split("/@")[0]
+
+        xpath = xpath.rsplit("/", 1)[0]
+        return xpath
 
     @classmethod
     def getParent(cls, node):
-        return node.getparent()
+        if isinstance(node, ObjectParser):
+            return ObjectParser(node.ele.getparent(),
+                                cls.get_parent_xpath(node.xpath))
+        else:
+            return node.getparent()
 
     @classmethod
     def remove(cls, node):
-        parent = node.getparent()
+        parent = node.ele.getparent()
         if parent is not None:
-            if node.tail:
-                prev = node.getprevious()
+            if node.ele.tail:
+                prev = node.ele.getprevious()
                 if prev is None:
                     if not parent.text:
                         parent.text = ''
-                    parent.text += ' ' + node.tail
+                    parent.text += ' ' + node.ele.tail
                 else:
                     if not prev.tail:
                         prev.tail = ''
-                    prev.tail += ' ' + node.tail
-            node.clear()
-            parent.remove(node)
+                    prev.tail += ' ' + node.ele.tail
+            node.ele.clear()
+            parent.remove(node.ele)
 
     @classmethod
     def getTag(cls, node):
+        if isinstance(node, ObjectParser):
+            node = node.ele
         return node.tag
 
     @classmethod
@@ -236,6 +289,8 @@ class Parser(parsers.Parser):
     @classmethod
     def previousSibling(cls, node):
         nodes = []
+        if isinstance(node, ObjectParser):
+            node = node.ele
         for c, n in enumerate(node.itersiblings(preceding=True)):
             nodes.append(n)
             if c == 0:
@@ -255,8 +310,12 @@ class Parser(parsers.Parser):
     def isTextNode(cls, node):
         return True if node.tag == 'text' else False
 
+    # NOTE(hieulq): get attr of iframe data-src is not implemented in video
+    # extractor
     @classmethod
     def getAttribute(cls, node, attr=None):
+        if isinstance(node, ObjectParser):
+            node = node.ele
         if attr:
             attr = node.attrib.get(attr, None)
         if attr:
@@ -266,12 +325,14 @@ class Parser(parsers.Parser):
     @classmethod
     def delAttribute(cls, node, attr=None):
         if attr:
-            _attr = node.attrib.get(attr, None)
+            _attr = node.ele.attrib.get(attr, None)
             if _attr:
-                del node.attrib[attr]
+                del node.ele.attrib[attr]
 
     @classmethod
     def setAttribute(cls, node, attr=None, value=None):
+        if isinstance(node, ObjectParser):
+            node = node.ele
         if attr and value:
             node.set(attr, value)
 
