@@ -33,7 +33,7 @@ def engine():
     if engine_class:
         cls = importutils.import_class(engine_class)
     else:
-        LOG.error('The configuration options for news detector engine is '
+        LOG.error('The configuration options for news news_detector engine is '
                   'wrong! Please identify the correct news detector engine in '
                   'supported engine list.')
         raise NotImplementedError
