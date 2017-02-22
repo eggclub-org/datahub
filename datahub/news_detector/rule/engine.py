@@ -39,8 +39,14 @@ class Engine(engine_base.Engine):
                 article.process()
             except ArticleException:
                 LOG.error("There are something wrong with %s" % target_url)
+                article = None
             return article
         else:
-            src = Source(target_url, config=self.config,
-                         extractor=self.extractor)
-            return src.process()
+            try:
+                src = Source(target_url, config=self.config,
+                             extractor=self.extractor)
+                result = src.process()
+            except Exception:
+                LOG.error("There are something wrong with %s" % target_url)
+                result = None
+            return result

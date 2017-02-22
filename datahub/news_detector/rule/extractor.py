@@ -484,7 +484,8 @@ class Extractor(extractors.ContentExtractor):
                 top_node = e
 
         # Add xpath text() function
-        top_node.xpath += '//text()'
+        if top_node:
+            top_node.xpath += '//text()'
         return top_node
 
     def _get_urls(self, doc, titles):
