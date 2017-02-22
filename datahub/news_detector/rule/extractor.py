@@ -54,14 +54,15 @@ class Extractor(extractors.ContentExtractor):
         4. title starts with og:title, use og:title
         5. use title, after splitting
         """
-        title_xpath = None
+        title_xpath = ''
         title_element = self.parser.getElementsByTag(doc, tag='title')
         # no title found
-        if title_element is None or len(title_element) == 0:
+        if not title_element:
             return title_xpath
 
         # title elem found
         title_text = title_element[0].text
+        title_xpath = title_element[0].xpath
 
         # title from h1
         # - extract the longest text from all h1 elements
@@ -226,8 +227,10 @@ class Extractor(extractors.ContentExtractor):
                     meta.xpath += '/@content'
                     meta.text = meta.ele.xpath(meta.xpath)[0]
                     attr = meta
-                    break
-        return attr.xpath
+                    return attr.text.lower(), attr.xpath
+
+            return '', ''
+        return attr.lower(), '/html/@lang'
 
     def get_favicon(self, doc):
         """Extract the favicon from a website
@@ -241,14 +244,14 @@ class Extractor(extractors.ContentExtractor):
             return favicon
         return ''
 
-    def get_meta_content(self, doc, metaName):
+    def get_meta_content(self, doc, meta_name):
         """Extract a given meta content form document.
         Example metaNames:
             "meta[name=description]"
             "meta[name=keywords]"
             "meta[property=og:type]"
         """
-        meta = self.parser.css_select(doc, metaName)
+        meta = self.parser.css_select(doc, meta_name)
         if meta:
             return meta[0].xpath + '/@content'
         return ''
@@ -479,6 +482,9 @@ class Extractor(extractors.ContentExtractor):
 
             if top_node is None:
                 top_node = e
+
+        # Add xpath text() function
+        top_node.xpath += '//text()'
         return top_node
 
     def _get_urls(self, doc, titles):
@@ -495,5 +501,6 @@ class Extractor(extractors.ContentExtractor):
         # method which siphones the titles our of a list of <a> tags.
         if titles:
             return [(a.ele.get('href'), a.ele.text) for a in a_tags
-                    if a.ele.get('href')]
-        return [a.ele.get('href') for a in a_tags if a.ele.get('href')]
+                    if a.ele.get('href') and '#' not in a.ele.get('href')]
+        return [a.ele.get('href') for a in a_tags if a.ele.get('href') and
+                '#' not in a.ele.get('href')]

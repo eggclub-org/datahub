@@ -258,20 +258,22 @@ class Parser(parsers.Parser):
 
     @classmethod
     def remove(cls, node):
-        parent = node.ele.getparent()
+        if isinstance(node, ObjectParser):
+            node = node.ele
+        parent = node.getparent()
         if parent is not None:
-            if node.ele.tail:
-                prev = node.ele.getprevious()
+            if node.tail:
+                prev = node.getprevious()
                 if prev is None:
                     if not parent.text:
                         parent.text = ''
-                    parent.text += ' ' + node.ele.tail
+                    parent.text += ' ' + node.tail
                 else:
                     if not prev.tail:
                         prev.tail = ''
-                    prev.tail += ' ' + node.ele.tail
-            node.ele.clear()
-            parent.remove(node.ele)
+                    prev.tail += ' ' + node.tail
+            node.clear()
+            parent.remove(node)
 
     @classmethod
     def getTag(cls, node):

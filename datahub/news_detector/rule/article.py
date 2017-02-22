@@ -11,14 +11,22 @@
 # under the License.
 
 import copy
-from newspaper import article
+from newspaper import article as base_article
 from newspaper.cleaners import DocumentCleaner
 from newspaper import source
+from oslo_log import log as logging
+from urllib import parse
 
 from datahub.news_detector.rule.extractor import VideoExtractor
 
+LOG = logging.getLogger(__name__)
 
-class Article(article.Article):
+
+class ArticleException(Exception):
+    pass
+
+
+class Article(base_article.Article):
 
     def __init__(self, url, title='', source_url='', config=None,
                  extractor=None, **kwargs):
@@ -26,12 +34,14 @@ class Article(article.Article):
         self.link_hash = None
         self.extractor = extractor
 
+    def set_meta_language(self, meta_lang):
+        """Save langauges in their ISO 2-character form
+        """
+        self.meta_lang = meta_lang
+
     def parse(self):
         if not self.is_downloaded:
-            print('Something wrong with network!'
-                  'You must `download()` an article before '
-                  'calling `parse()` on it!')
-            raise article.ArticleException()
+            raise ArticleException()
 
         self.doc = self.config.get_parser().fromstring(self.html)
         self.clean_doc = copy.deepcopy(self.doc)
@@ -53,10 +63,10 @@ class Article(article.Article):
         self.set_authors(authors)
 
         meta_lang = self.extractor.get_meta_lang(self.clean_doc)
-        self.set_meta_language(meta_lang)
+        self.set_meta_language(meta_lang[1])
 
         if self.config.use_meta_language:
-            self.extractor.update_language(self.meta_lang)
+            self.extractor.update_language(meta_lang[0])
 
         meta_favicon = self.extractor.get_favicon(self.clean_doc)
         self.set_meta_favicon(meta_favicon)
@@ -116,6 +126,75 @@ class Source(source.Source):
         urls = [url for url in urls if url not in seen and not seen.add(url)]
         self.categories = [source.Category(url=url) for url in urls]
 
+    def _generate_format_for_categories(self):
+        categories = self.categories
+        articles = self.articles
+        candidates = {}
+        # Eliminate all articles have same domain, keep only 01 candidate
+        for category in categories:
+            domain_path = parse.urlparse(category.url).path
+            domain = parse.urlparse(category.url).netloc + domain_path
+            for article in articles:
+                a_domain = parse.urlparse(article.url).netloc
+                if domain_path:
+                    a_domain += "/" + \
+                        parse.urlparse(article.url).path.split('/', 2)[1]
+                if (domain == a_domain) and not (domain in candidates):
+                    candidates[domain] = article
+                else:
+                    continue
+
+        # Detect format for each domain
+        for domain in candidates:
+            try:
+                candidates[domain].process()
+            except ArticleException:
+                LOG.error("Cannot process article with url %s" %
+                          candidates[domain].url)
+
+        return candidates
+
+    def feeds_to_articles(self):
+        """Returns articles given the url of a feed
+        """
+        articles = []
+        for feed in self.feeds:
+            urls = self.extractor.get_urls(feed.rss, regex=True)
+            cur_articles = []
+
+            for url in urls:
+                article = Article(url=url, source_url=self.url,
+                                  config=self.config, extractor=self.extractor)
+                cur_articles.append(article)
+
+            cur_articles = self.purge_articles('url', cur_articles)
+            articles.extend(cur_articles)
+
+        return articles
+
+    def categories_to_articles(self):
+        """Takes the categories, splays them into a big list of urls and churns
+        the articles out of each url with the url_to_article method
+        """
+        articles = []
+        for category in self.categories:
+            cur_articles = []
+            url_title_tups = self.extractor.get_urls(category.doc, titles=True)
+
+            for tup in url_title_tups:
+                indiv_url = tup[0]
+                indiv_title = tup[1]
+
+                _article = Article(url=indiv_url, source_url=self.url,
+                                   title=indiv_title, config=self.config,
+                                   extractor=self.extractor)
+                cur_articles.append(_article)
+
+            cur_articles = self.purge_articles('url', cur_articles)
+            articles.extend(cur_articles)
+
+        return articles
+
     def process(self):
         self.download()
         self.parse()
@@ -126,7 +205,9 @@ class Source(source.Source):
 
         self.set_feeds()
         self.download_feeds()  # mthread
-        # TODO: self.parse_feeds()  # regex for now
+        # TODO(hieulq): self.parse_feeds()  # regex for now
 
         self.generate_articles()
+        result = self._generate_format_for_categories()
 
+        return result
