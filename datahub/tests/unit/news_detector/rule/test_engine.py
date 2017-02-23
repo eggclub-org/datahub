@@ -14,27 +14,38 @@
 
 import mock
 
-from datahub.news_detector.rule import engine
 from datahub.news_detector.rule import article
+from datahub.news_detector.rule import engine
 from datahub.tests import base
 
 
 class RuleEngineTestCase(base.TestCase):
 
+    def setUp(self):
+        super(RuleEngineTestCase, self).setUp()
+        self.engine = engine.Engine()
+
     @mock.patch.object(article.Article, 'process',
                        side_effect=article.ArticleException)
     def test_detect_article_false(self, mock_process):
-        en = engine.Engine()
-        res = en.detect(self.context, target_url="foobar", is_article=True)
+        res = self.engine.detect(self.context, target_url="foobar",
+                                 is_article=True)
 
         self.assertIsNone(res)
         mock_process.assert_called_once_with()
 
     @mock.patch.object(article.Source, 'process')
     def test_detect_domain_false_bad_url(self, mock_process):
-        en = engine.Engine()
-
-        res = en.detect(self.context, target_url="foobar", is_article=False)
+        res = self.engine.detect(self.context, target_url="foobar",
+                                 is_article=False)
 
         self.assertIsNone(res)
         self.assertFalse(mock_process.called)
+
+    @mock.patch.object(article.Source, 'process', return_value='foobar')
+    def test_detect_domain_ok(self, mock_process):
+        res = self.engine.detect(self.context, target_url="http://foo.bar",
+                                 is_article=False)
+
+        self.assertEqual(res, 'foobar')
+        mock_process.assert_called_once_with()

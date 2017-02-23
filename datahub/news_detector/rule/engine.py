@@ -38,7 +38,7 @@ class Engine(engine_base.Engine):
             try:
                 article.process()
             except ArticleException:
-                LOG.error("There are something wrong with %s" % target_url)
+                LOG.error("Cannot process article with %s" % target_url)
                 article = None
             return article
         else:
@@ -46,7 +46,7 @@ class Engine(engine_base.Engine):
                 src = Source(target_url, config=self.config,
                              extractor=self.extractor)
                 result = src.process()
-            except Exception:
-                LOG.error("There are something wrong with %s" % target_url)
+            except ValueError:
+                LOG.error("Cannot process domain with %s" % target_url)
                 result = None
             return result

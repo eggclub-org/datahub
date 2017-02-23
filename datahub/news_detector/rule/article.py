@@ -14,6 +14,8 @@ import copy
 from newspaper import article as base_article
 from newspaper.cleaners import DocumentCleaner
 from newspaper import source
+from newspaper import urls
+from newspaper import utils
 from oslo_log import log as logging
 from urllib import parse
 
@@ -116,15 +118,42 @@ class Article(base_article.Article):
 class Source(source.Source):
 
     def __init__(self, url, config=None, extractor=None, **kwargs):
-        super(Source, self).__init__(url, config, **kwargs)
+        if (url is None) or ('://' not in url) or (url[:4] != 'http'):
+            raise ValueError('Input url is bad!')
+
+        self.config = config
+        self.config = utils.extend_config(self.config, kwargs)
+
         self.extractor = extractor
 
+        self.url = url
+        self.url = urls.prepare_url(url)
+
+        self.domain = urls.get_domain(self.url)
+        self.scheme = urls.get_scheme(self.url)
+
+        self.categories = []
+        self.feeds = []
+        self.articles = []
+
+        self.html = ''
+        self.doc = None
+
+        self.logo_url = ''
+        self.favicon = ''
+        self.brand = 'datahub'
+        self.description = ''
+
+        self.is_parsed = False
+        self.is_downloaded = False
+
     def set_categories(self):
-        urls = self._get_category_urls(self.domain)
+        targets = self._get_category_urls(self.domain)
         # de-duplicate URL in result
         seen = set()
-        urls = [url for url in urls if url not in seen and not seen.add(url)]
-        self.categories = [source.Category(url=url) for url in urls]
+        targets = [url for url in targets
+                   if url not in seen and not seen.add(url)]
+        self.categories = [source.Category(url=url) for url in targets]
 
     def _generate_format_for_categories(self):
         categories = self.categories

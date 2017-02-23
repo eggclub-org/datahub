@@ -44,6 +44,20 @@ class ObjectParser(object):
         self.ele.insert(idx, element)
 
 
+# Decorator for convert ObjectParser to LXML object
+def check(idx=[], *types):
+    def check_type(f):
+
+        def re_f(*args, **kwargs):
+            for (i, typ) in zip(idx, types):
+                if isinstance(args[i], typ) and typ == ObjectParser:
+                    args = args[:i] + (args[i].ele,) + args[i + 1:]
+            return f(*args, **kwargs)
+        re_f.__name__ = f.__name__
+        return re_f
+    return check_type
+
+
 class Parser(parsers.Parser):
 
     @classmethod
@@ -67,17 +81,15 @@ class Parser(parsers.Parser):
             nodes.ele.drop_tag()
 
     @classmethod
+    @check([1], ObjectParser)
     def getText(cls, node):
-        if isinstance(node, ObjectParser):
-            node = node.ele
         txts = [i for i in node.itertext()]
         return text.innerTrim(' '.join(txts).strip())
 
     @classmethod
+    @check([1], ObjectParser)
     def css_select(cls, node, selector):
         result = []
-        if isinstance(node, ObjectParser):
-            node = node.ele
         tree = lxml.etree.ElementTree(node)
         items = node.cssselect(selector)
         for item in items:
@@ -127,12 +139,11 @@ class Parser(parsers.Parser):
         return article_cleaner.clean_html(node)
 
     @classmethod
+    @check([1], ObjectParser)
     def nodeToString(cls, node):
         """`decode` is needed at the end because `etree.tostring`
         returns a python bytestring
         """
-        if isinstance(node, ObjectParser):
-            node = node.ele
         return lxml.etree.tostring(node, method='html').decode()
 
     @classmethod
@@ -152,11 +163,10 @@ class Parser(parsers.Parser):
         return None
 
     @classmethod
+    @check([1], ObjectParser)
     def getElementsByTag(
             cls, node, tag=None, attr=None, value=None, childs=False):
         result = []
-        if isinstance(node, ObjectParser):
-            node = node.ele
         NS = "http://exslt.org/regular-expressions"
         # selector = tag or '*'
         selector = 'descendant-or-self::%s' % (tag or '*')
@@ -208,9 +218,8 @@ class Parser(parsers.Parser):
         return cls.fromstring(text)
 
     @classmethod
+    @check([1], ObjectParser)
     def getChildren(cls, node):
-        if isinstance(node, ObjectParser):
-            node = node.ele
         return node.getchildren()
 
     @classmethod
@@ -257,9 +266,8 @@ class Parser(parsers.Parser):
             return node.getparent()
 
     @classmethod
+    @check([1], ObjectParser)
     def remove(cls, node):
-        if isinstance(node, ObjectParser):
-            node = node.ele
         parent = node.getparent()
         if parent is not None:
             if node.tail:
@@ -276,9 +284,8 @@ class Parser(parsers.Parser):
             parent.remove(node)
 
     @classmethod
+    @check([1], ObjectParser)
     def getTag(cls, node):
-        if isinstance(node, ObjectParser):
-            node = node.ele
         return node.tag
 
     @classmethod
@@ -289,10 +296,9 @@ class Parser(parsers.Parser):
         return nodes
 
     @classmethod
+    @check([1], ObjectParser)
     def previousSibling(cls, node):
         nodes = []
-        if isinstance(node, ObjectParser):
-            node = node.ele
         for c, n in enumerate(node.itersiblings(preceding=True)):
             nodes.append(n)
             if c == 0:
@@ -315,9 +321,8 @@ class Parser(parsers.Parser):
     # NOTE(hieulq): get attr of iframe data-src is not implemented in video
     # extractor
     @classmethod
+    @check([1], ObjectParser)
     def getAttribute(cls, node, attr=None):
-        if isinstance(node, ObjectParser):
-            node = node.ele
         if attr:
             attr = node.attrib.get(attr, None)
         if attr:
@@ -332,9 +337,8 @@ class Parser(parsers.Parser):
                 del node.ele.attrib[attr]
 
     @classmethod
+    @check([1], ObjectParser)
     def setAttribute(cls, node, attr=None, value=None):
-        if isinstance(node, ObjectParser):
-            node = node.ele
         if attr and value:
             node.set(attr, value)
 
