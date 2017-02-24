@@ -131,7 +131,7 @@ class Extractor(extractors.ContentExtractor):
                 if item.text.lower() in seen:
                     continue
                 seen[item.text.lower()] = 1
-                result.append(item)
+                result.append(item.xpath)
             return result
 
         def parse_byline(obj):

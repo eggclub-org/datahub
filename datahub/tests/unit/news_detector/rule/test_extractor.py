@@ -22,6 +22,9 @@ from datahub.news_detector.rule.parser import Parser
 
 from datahub.tests import base
 
+ATTRS = ['name', 'rel', 'itemprop', 'class', 'id']
+VALS = ['author', 'byline', 'dc.creator']
+
 
 class RuleExtractorTestCase(base.TestCase):
 
@@ -30,6 +33,14 @@ class RuleExtractorTestCase(base.TestCase):
         self.doc = sentinel.fake_doc
         self.ele = sentinel.fake_ele
         self.extractor = extractor.Extractor(config.SourceConfig())
+        self.fake_title = ObjectParser(self.ele, 'fake_title_ele',
+                                       'fake_title')
+        self.fake_h1 = ObjectParser(self.ele, 'fake_h1_ele', 'fake_h1')
+        self.fake_fb = ObjectParser(self.ele, 'fake_fb_ele', 'fake_fb')
+        self.fake_author = ObjectParser(self.ele, 'fake_author_ele',
+                                        'fake_author')
+        self.fake_meta_lang = ObjectParser(self.ele, 'fake_metalang_ele',
+                                           'fake_metalang')
 
     @mock.patch.object(Parser, 'getElementsByTag',
                        return_value=None)
@@ -42,12 +53,9 @@ class RuleExtractorTestCase(base.TestCase):
     @mock.patch.object(Parser, 'xpath_re')
     @mock.patch.object(Parser, 'getElementsByTag')
     def test_get_title_by_title_element(self, mock_get, mock_xpath):
-        fake_title = ObjectParser(self.ele, 'fake_title_ele', 'fake_title')
-        fake_h1 = ObjectParser(self.ele, 'fake_h1_ele', 'fake_title')
-        fake_fb = ObjectParser(self.ele, 'fake_fb_ele', 'fake_fb')
-
-        mock_get.side_effect = [[fake_title], [fake_h1]]
-        mock_xpath.return_value = [fake_fb]
+        self.fake_h1.text = 'fake_title'
+        mock_get.side_effect = [[self.fake_title], [self.fake_h1]]
+        mock_xpath.return_value = [self.fake_fb]
 
         res = self.extractor.get_title(self.doc)
 
@@ -57,3 +65,134 @@ class RuleExtractorTestCase(base.TestCase):
         mock_xpath.assert_called_once_with(self.doc, '//meta['
                                                      '@property="og:title"]'
                                                      '/@content')
+
+    @mock.patch.object(Parser, 'xpath_re')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_title_by_h1(self, mock_get, mock_xpath):
+        self.fake_fb.text = 'fake_h1'
+
+        mock_get.side_effect = [[self.fake_title], [self.fake_h1]]
+        mock_xpath.return_value = [self.fake_fb]
+
+        res = self.extractor.get_title(self.doc)
+
+        self.assertEqual('fake_h1_ele', res)
+        mock_get.assert_has_calls([mock.call(self.doc, tag='title'),
+                                   mock.call(self.doc, tag='h1')])
+        mock_xpath.assert_called_once_with(self.doc, '//meta['
+                                                     '@property="og:title"]'
+                                                     '/@content')
+
+    @mock.patch.object(Parser, 'xpath_re')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_title_by_h1_in_title(self, mock_get, mock_xpath):
+        self.fake_title.text = 'fake_title_big'
+        self.fake_h1.text = 'fake_title_b'
+        self.fake_fb.text = 'fake_title'
+
+        mock_get.side_effect = [[self.fake_title], [self.fake_h1]]
+        mock_xpath.return_value = [self.fake_fb]
+
+        res = self.extractor.get_title(self.doc)
+
+        self.assertEqual('fake_h1_ele', res)
+        mock_get.assert_has_calls([mock.call(self.doc, tag='title'),
+                                   mock.call(self.doc, tag='h1')])
+        mock_xpath.assert_called_once_with(self.doc, '//meta['
+                                                     '@property="og:title"]'
+                                                     '/@content')
+
+    @mock.patch.object(Parser, 'xpath_re')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_title_by_fb_in_title(self, mock_get, mock_xpath):
+        fake_title = ObjectParser(self.ele, 'fake_title_ele', 'fake_title_big')
+        fake_h1 = ObjectParser(self.ele, 'fake_h1_ele', 'fake_h1')
+        fake_fb = ObjectParser(self.ele, 'fake_fb_ele', 'fake_title')
+
+        mock_get.side_effect = [[fake_title], [fake_h1]]
+        mock_xpath.return_value = [fake_fb]
+
+        res = self.extractor.get_title(self.doc)
+
+        self.assertEqual('fake_fb_ele', res)
+        mock_get.assert_has_calls([mock.call(self.doc, tag='title'),
+                                   mock.call(self.doc, tag='h1')])
+        mock_xpath.assert_called_once_with(self.doc, '//meta['
+                                                     '@property="og:title"]'
+                                                     '/@content')
+
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_author_invalid_meta(self, mock_get):
+        self.fake_author.ele = mock.MagicMock()
+        self.fake_author.ele.tag = 'meta'
+        self.fake_author.ele.xpath.return_value = ['fake_text']
+        mock_get.side_effect = [[self.fake_author], [], [], [], [], [], [], [],
+                                [], [], [], [], [], [], []]
+
+        res = self.extractor.get_authors(self.doc)
+
+        self.assertEqual([], res)
+        mock_calls = []
+        for attr in ATTRS:
+            for val in VALS:
+                mock_calls.append(mock.call(self.doc, attr=attr, value=val))
+        mock_get.assert_has_calls(mock_calls)
+        self.fake_author.ele.xpath.assert_called_once_with(
+            'fake_author_ele/@content')
+
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_author_valid(self, mock_get):
+        self.fake_author.ele.tag = 'super_meta'
+        self.fake_author.text = 'By: Foo Bar, Far Boo'
+        mock_get.side_effect = [[self.fake_author], [], [], [], [], [], [],
+                                [], [], [], [], [], [], [], []]
+
+        res = self.extractor.get_authors(self.doc)
+
+        mock_calls = []
+        for attr in ATTRS:
+            for val in VALS:
+                mock_calls.append(mock.call(self.doc, attr=attr, value=val))
+        mock_get.assert_has_calls(mock_calls)
+        self.assertEqual(['fake_author_ele'], res)
+
+    @mock.patch.object(Parser, 'getAttribute')
+    def test_get_meta_lang_attr(self, mock_get):
+        mock_get.return_value = 'Fake_Lang'
+        res = self.extractor.get_meta_lang(self.doc)
+        self.assertEqual(('fake_lang', '/html/@lang'), res)
+        mock_get.assert_called_once_with(self.doc, attr='lang')
+
+    @mock.patch.object(Parser, 'getAttribute')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_meta_lang_attr_none(self, mock_get_ele, mock_get_attr):
+        self.fake_meta_lang.ele = mock.MagicMock()
+        self.fake_meta_lang.ele.tag = 'meta'
+        self.fake_meta_lang.ele.xpath.return_value = ['Fake_Lang']
+        mock_get_attr.return_value = None
+        mock_get_ele.return_value = [self.fake_meta_lang]
+
+        res = self.extractor.get_meta_lang(self.doc)
+
+        self.assertEqual(('fake_lang', 'fake_metalang_ele/@content'), res)
+        mock_get_attr.assert_called_once_with(self.doc, attr='lang')
+        mock_get_ele.assert_called_once_with(self.doc, tag='meta',
+                                             attr='http-equiv',
+                                             value='content-language')
+        self.fake_meta_lang.ele.xpath.assert_called_once_with(
+            'fake_metalang_ele/@content')
+
+    @mock.patch.object(Parser, 'getAttribute')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_none_meta_lang_attr(self, mock_get_ele, mock_get_attr):
+        mock_get_attr.return_value = None
+        mock_get_ele.return_value = None
+
+        res = self.extractor.get_meta_lang(self.doc)
+
+        self.assertEqual(('', ''), res)
+        mock_get_attr.assert_called_once_with(self.doc, attr='lang')
+        mock_get_ele.assert_has_calls([
+            mock.call(self.doc, tag='meta', attr='http-equiv',
+                      value='content-language'),
+            mock.call(self.doc, tag='meta', attr='name', value='lang')])
