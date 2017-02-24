@@ -270,4 +270,3 @@ class RuleExtractorTestCase(base.TestCase):
         self.assertEqual('', res)
         mock_get_ele.assert_called_once_with(self.doc, tag='link', attr='rel',
                                              value='icon')
-
