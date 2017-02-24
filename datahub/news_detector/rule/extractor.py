@@ -256,7 +256,7 @@ class Extractor(extractors.ContentExtractor):
             return meta[0].xpath + '/@content'
         return ''
 
-    def get_canonical_link(self, article_url, doc):
+    def get_canonical_link(self, doc):
         """
         Return the article's canonical URL
 

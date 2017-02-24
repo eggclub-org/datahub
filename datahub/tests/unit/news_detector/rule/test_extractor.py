@@ -196,3 +196,78 @@ class RuleExtractorTestCase(base.TestCase):
             mock.call(self.doc, tag='meta', attr='http-equiv',
                       value='content-language'),
             mock.call(self.doc, tag='meta', attr='name', value='lang')])
+
+    @mock.patch.object(Parser, 'css_select')
+    def test_get_meta_content_none(self, mock_css):
+        mock_css.return_value = None
+        res = self.extractor.get_meta_content(self.doc, 'fake_meta')
+        self.assertEqual('', res)
+        mock_css.assert_called_once_with(self.doc, 'fake_meta')
+
+    @mock.patch.object(Parser, 'css_select')
+    def test_get_meta_content(self, mock_css):
+        mock_css.return_value = [self.fake_meta_lang]
+        res = self.extractor.get_meta_content(self.doc, 'fake_meta')
+        self.assertEqual('fake_metalang_ele/@content', res)
+        mock_css.assert_called_once_with(self.doc, 'fake_meta')
+
+    @mock.patch.object(Parser, 'getAttribute')
+    @mock.patch.object(Parser, 'css_select')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_canonical_link_ca(self, mock_get_ele, mock_get_css,
+                                   mock_get_attr):
+        mock_get_ele.return_value = [self.fake_meta_lang]
+        mock_get_css.return_value = []
+        mock_get_attr.return_value = 'fake_url'
+        res = self.extractor.get_canonical_link(self.doc)
+        self.assertEqual('fake_metalang_ele/@href', res)
+        mock_get_ele.assert_called_once_with(self.doc, tag='link', attr='rel',
+                                             value='canonical')
+        mock_get_css.assert_called_once_with(self.doc,
+                                             'meta[property="og:url"]')
+        mock_get_attr.assert_called_once_with(self.ele, 'href')
+
+    @mock.patch.object(Parser, 'getAttribute')
+    @mock.patch.object(Parser, 'css_select')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_canonical_link_og(self, mock_get_ele, mock_get_css,
+                                   mock_get_attr):
+        mock_get_ele.return_value = []
+        mock_get_css.return_value = [self.fake_meta_lang]
+        mock_get_attr.return_value = 'fake_url'
+        res = self.extractor.get_canonical_link(self.doc)
+        self.assertEqual('fake_metalang_ele/@content', res)
+        mock_get_ele.assert_called_once_with(self.doc, tag='link', attr='rel',
+                                             value='canonical')
+        mock_get_css.assert_called_once_with(self.doc,
+                                             'meta[property="og:url"]')
+        mock_get_attr.assert_called_once_with(self.ele, 'content')
+
+    @mock.patch.object(Parser, 'css_select')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_canonical_link_none(self, mock_get_ele, mock_get_css):
+        mock_get_ele.return_value = []
+        mock_get_css.return_value = []
+        res = self.extractor.get_canonical_link(self.doc)
+        self.assertEqual('', res)
+        mock_get_ele.assert_called_once_with(self.doc, tag='link', attr='rel',
+                                             value='canonical')
+        mock_get_css.assert_called_once_with(self.doc,
+                                             'meta[property="og:url"]')
+
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_fav_icon_ok(self, mock_get_ele):
+        mock_get_ele.return_value = [self.fake_meta_lang]
+        res = self.extractor.get_favicon(self.doc)
+        self.assertEqual('fake_metalang_ele/@href', res)
+        mock_get_ele.assert_called_once_with(self.doc, tag='link', attr='rel',
+                                             value='icon')
+
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_fav_icon_none(self, mock_get_ele):
+        mock_get_ele.return_value = []
+        res = self.extractor.get_favicon(self.doc)
+        self.assertEqual('', res)
+        mock_get_ele.assert_called_once_with(self.doc, tag='link', attr='rel',
+                                             value='icon')
+

@@ -77,8 +77,7 @@ class Article(base_article.Article):
             self.extractor.get_meta_description(self.clean_doc)
         self.set_meta_description(meta_description)
 
-        canonical_link = self.extractor.get_canonical_link(
-            self.url, self.clean_doc)
+        canonical_link = self.extractor.get_canonical_link(self.clean_doc)
         self.set_canonical_link(canonical_link)
 
         tags = self.extractor.extract_tags(self.clean_doc)
