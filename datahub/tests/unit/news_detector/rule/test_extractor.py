@@ -15,6 +15,8 @@
 from collections import defaultdict
 import mock
 from mock import sentinel
+from newspaper.extractors import ContentExtractor
+from newspaper.text import StopWords
 
 from datahub.news_detector.rule import config
 from datahub.news_detector.rule import extractor
@@ -330,3 +332,103 @@ class RuleExtractorTestCase(base.TestCase):
             mock.call('property'), mock.call('name'),
             mock.call('content'), mock.call('value')
         ])
+
+    @mock.patch.object(Parser, 'getAttribute')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_publishing_date_ok(self, mock_get_tag, mock_get_attr):
+        mock_get_tag.return_value = [self.fake_meta_data]
+        mock_get_attr.return_value = '2017-03-25'
+        res = self.extractor.get_publishing_date('fake_url', self.doc)
+        self.assertEqual('fake_metadata_ele/@content', res)
+        mock_get_tag.assert_called_once_with(self.doc, attr='property',
+                                             value='rnews:datePublished')
+        mock_get_attr.assert_called_once_with(self.fake_meta_data.ele,
+                                              'content')
+
+    @mock.patch.object(Parser, 'getAttribute')
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_publishing_date_fail(self, mock_get_tag, mock_get_attr):
+        mock_get_tag.return_value = [self.fake_meta_data]
+        mock_get_attr.return_value = '2017-13'
+        res = self.extractor.get_publishing_date('fake_url', self.doc)
+        self.assertEqual('', res)
+        mock_get_tag.assert_has_calls([
+            mock.call(self.doc, attr='property', value='rnews:datePublished'),
+            mock.call(self.doc, attr='property',
+                      value='article:published_time'),
+            mock.call(self.doc, attr='name', value='OriginalPublicationDate'),
+            mock.call(self.doc, attr='itemprop', value='datePublished'),
+            mock.call(self.doc, attr='property', value='og:published_time'),
+            mock.call(self.doc, attr='name', value='article_date_original'),
+            mock.call(self.doc, attr='name', value='publication_date'),
+            mock.call(self.doc, attr='name', value='sailthru.date'),
+            mock.call(self.doc, attr='name', value='PublishDate')
+        ])
+        mock_get_attr.assert_has_calls([
+            mock.call(self.fake_meta_data.ele, 'content'),
+            mock.call(self.fake_meta_data.ele, 'content'),
+            mock.call(self.fake_meta_data.ele, 'content'),
+            mock.call(self.fake_meta_data.ele, 'datetime'),
+            mock.call(self.fake_meta_data.ele, 'content'),
+            mock.call(self.fake_meta_data.ele, 'content'),
+            mock.call(self.fake_meta_data.ele, 'content'),
+            mock.call(self.fake_meta_data.ele, 'content'),
+            mock.call(self.fake_meta_data.ele, 'content'),
+        ])
+
+    def test_get_urls_none(self):
+        res = self.extractor._get_urls(None, 'fake_title')
+        self.assertEqual([], res)
+
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_urls_titles(self, mock_get):
+        self.fake_meta_data.ele = mock.MagicMock()
+        self.fake_meta_data.ele.get.return_value = 'http://www.example.com'
+        self.fake_meta_data.ele.text = 'fake_text'
+        mock_get.return_value = [self.fake_meta_data]
+        res = self.extractor._get_urls(self.doc, 'fake_title')
+        self.assertEqual([('http://www.example.com', 'fake_text')], res)
+        mock_get.assert_called_once_with(self.doc, tag='a')
+        self.fake_meta_data.ele.get.assert_has_calls([
+            mock.call('href'), mock.call('href'), mock.call('href')
+        ])
+
+    @mock.patch.object(Parser, 'getElementsByTag')
+    def test_get_urls_no_titles(self, mock_get):
+        self.fake_meta_data.ele = mock.MagicMock()
+        self.fake_meta_data.ele.get.return_value = 'http://www.example.com'
+        self.fake_meta_data.ele.text = 'fake_text'
+        mock_get.return_value = [self.fake_meta_data]
+        res = self.extractor._get_urls(self.doc, None)
+        self.assertEqual([('http://www.example.com')], res)
+        mock_get.assert_called_once_with(self.doc, tag='a')
+        self.fake_meta_data.ele.get.assert_has_calls([
+            mock.call('href'), mock.call('href'), mock.call('href')
+        ])
+
+    @mock.patch.object(ContentExtractor, 'get_score')
+    @mock.patch.object(ContentExtractor, 'update_node_count')
+    @mock.patch.object(ContentExtractor, 'update_score')
+    @mock.patch.object(Parser, 'getParent')
+    @mock.patch.object(ContentExtractor, 'is_boostable')
+    @mock.patch.object(StopWords, 'get_stopword_count')
+    @mock.patch.object(ContentExtractor, 'is_highlink_density')
+    @mock.patch.object(Parser, 'getText')
+    @mock.patch.object(ContentExtractor, 'nodes_to_check')
+    def test_calculate_best_node(self, mock_check, mock_get_text,
+                                 mock_highlink, mock_get_sw, mock_boost,
+                                 mock_get_parent, mock_update_score,
+                                 mock_update_count, mock_get_score):
+        mock_ws = mock.MagicMock()
+        mock_check.return_value = [self.fake_meta_data]
+        mock_get_text.return_value = 'fake_text'
+        mock_highlink.return_value = False
+        mock_boost.return_value = True
+        mock_get_parent.return_value = self.fake_author
+        mock_get_score.return_value = 1
+
+        mock_get_sw.return_value = mock_ws
+        mock_ws.get_stopword_count.return_value = 3
+        res = self.extractor.calculate_best_node(self.doc)
+        # TODO(hieulq): adding more checks
+        self.assertEqual(self.fake_author, res)

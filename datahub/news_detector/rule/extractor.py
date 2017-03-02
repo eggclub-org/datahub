@@ -13,7 +13,6 @@
 from collections import defaultdict
 from dateutil.parser import parse as date_parser
 from newspaper import extractors
-from newspaper import urls
 from newspaper.videos import extractors as ve
 import re
 
@@ -335,17 +334,8 @@ class Extractor(extractors.ContentExtractor):
                 data[key_head] = {key_head: ref}
                 ref = data[key_head]
 
-            for idx, part in enumerate(key):
-                if idx == len(key) - 1:
-                    ref[part] = value
-                    break
-                if not ref.get(part):
-                    ref[part] = dict()
-                elif isinstance(ref.get(part), str):
-                    # Not clear what to do in this scenario,
-                    # it's not always a URL, but an ID of some sort
-                    ref[part] = {'identifier': ref[part]}
-                ref = ref[part]
+            if len(key) == 1:
+                ref[key[0]] = value
         return data
 
     def get_publishing_date(self, url, doc):
@@ -353,7 +343,7 @@ class Extractor(extractors.ContentExtractor):
         are descending in accuracy and the next strategy is only
         attempted if a preferred one fails.
 
-        1. Pubdate from URL
+        1. Pubdate from URL --> we do not use this method anymore
         2. Pubdate from metadata
         3. Raw regex searches in the HTML + added heuristics
         """
@@ -362,17 +352,10 @@ class Extractor(extractors.ContentExtractor):
             try:
                 datetime_obj = date_parser(date_str)
                 return datetime_obj
-            except Exception:
+            except ValueError:
                 # near all parse failures are due to URL dates without a day
                 # specifier, e.g. /2014/04/
                 return None
-
-        date_match = re.search(urls.DATE_REGEX, url)
-        if date_match:
-            date_str = date_match.group(0)
-            datetime_obj = parse_date_str(date_str)
-            if datetime_obj:
-                return datetime_obj
 
         PUBLISH_DATE_TAGS = [
             {'attribute': 'property', 'value': 'rnews:datePublished',
@@ -408,7 +391,7 @@ class Extractor(extractors.ContentExtractor):
                     return meta_tags[0].xpath + '/@' + \
                            known_meta_tag['content']
 
-        return None
+        return ''
 
     def calculate_best_node(self, doc):
         top_node = None
