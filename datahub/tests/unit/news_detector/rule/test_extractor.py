@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from collections import defaultdict
 import mock
 from mock import sentinel
 
@@ -41,6 +42,8 @@ class RuleExtractorTestCase(base.TestCase):
                                         'fake_author')
         self.fake_meta_lang = ObjectParser(self.ele, 'fake_metalang_ele',
                                            'fake_metalang')
+        self.fake_meta_data = ObjectParser(self.ele, 'fake_metadata_ele',
+                                           'fake_metadata')
 
     @mock.patch.object(Parser, 'getElementsByTag',
                        return_value=None)
@@ -270,3 +273,60 @@ class RuleExtractorTestCase(base.TestCase):
         self.assertEqual('', res)
         mock_get_ele.assert_called_once_with(self.doc, tag='link', attr='rel',
                                              value='icon')
+
+    def test_extract_tags_doc_none(self):
+        res = self.extractor.extract_tags([])
+        self.assertEqual(extractor.NO_STRINGS, res)
+
+    @mock.patch.object(Parser, 'css_select')
+    def test_extract_tags_element_none(self, mock_select):
+        mock_select.return_value = None
+        res = self.extractor.extract_tags([self.doc])
+        self.assertEqual(extractor.NO_STRINGS, res)
+        mock_select.assert_has_calls([mock.call([self.doc],
+                                                extractor.A_REL_TAG_SELECTOR),
+                                     mock.call([self.doc],
+                                               extractor.A_HREF_TAG_SELECTOR)])
+
+    @mock.patch.object(Parser, 'css_select')
+    def test_extract_tags_ok(self, mock_select):
+        mock_select.return_value = [self.fake_meta_lang]
+        res = self.extractor.extract_tags([self.doc])
+        self.assertEqual(set([self.fake_meta_lang.xpath]), res)
+        mock_select.assert_called_once_with([self.doc],
+                                            extractor.A_REL_TAG_SELECTOR)
+
+    @mock.patch.object(Parser, 'css_select')
+    def test_get_meta_data_key_tag(self, mock_select):
+        self.fake_meta_lang.ele = mock.MagicMock()
+        self.fake_meta_data.ele = mock.MagicMock()
+        self.fake_meta_lang.ele.attrib.get.side_effect = ['farboo:bar', None,
+                                                          'foo']
+        self.fake_meta_data.ele.attrib.get.return_value = 'farboo'
+        mock_select.return_value = [self.fake_meta_data, self.fake_meta_lang]
+        res = self.extractor.get_meta_data(self.doc)
+        expected = defaultdict(dict)
+        expected['farboo'] = {'bar': 'fake_metalang_ele/@value',
+                              'farboo': 'fake_metadata_ele'}
+        self.assertEqual(expected, res)
+        self.fake_meta_lang.ele.attrib.get.assert_has_calls([
+            mock.call('property'), mock.call('content'), mock.call('value')
+        ])
+        self.fake_meta_data.ele.attrib.get.assert_has_calls([
+            mock.call('property'), mock.call('content')
+        ])
+        mock_select.assert_called_once_with(self.doc, 'meta')
+
+    @mock.patch.object(Parser, 'css_select')
+    def test_get_meta_data_key_none(self, mock_select):
+        self.fake_meta_data.ele = mock.MagicMock()
+        self.fake_meta_data.ele.attrib.get.return_value = None
+        mock_select.return_value = [self.fake_meta_data]
+        res = self.extractor.get_meta_data(self.doc)
+        expected = defaultdict(dict)
+        self.assertEqual(expected, res)
+        mock_select.assert_called_once_with(self.doc, 'meta')
+        self.fake_meta_data.ele.attrib.get.assert_has_calls([
+            mock.call('property'), mock.call('name'),
+            mock.call('content'), mock.call('value')
+        ])

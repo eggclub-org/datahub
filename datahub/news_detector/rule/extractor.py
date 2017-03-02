@@ -322,8 +322,6 @@ class Extractor(extractors.ContentExtractor):
                 continue
 
             key, value = key.strip(), value.strip()
-            if value.isdigit():
-                value = int(value)
 
             if ':' not in key:
                 data[key] = prop.xpath
