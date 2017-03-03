@@ -424,11 +424,96 @@ class RuleExtractorTestCase(base.TestCase):
         mock_get_text.return_value = 'fake_text'
         mock_highlink.return_value = False
         mock_boost.return_value = True
+        mock_get_parent.side_effect = [self.fake_author, self.fake_meta_lang]
+        mock_get_score.return_value = 1
+
+        mock_get_sw.return_value = mock_ws
+        mock_ws.get_stopword_count.return_value = 3
+
+        res = self.extractor.calculate_best_node(self.doc)
+
+        self.assertEqual(self.fake_author, res)
+        mock_check.assert_called_once_with(self.doc)
+        mock_get_text.assert_has_calls([mock.call(self.ele),
+                                        mock.call(self.ele)])
+        mock_highlink.assert_called_once_with(self.ele)
+        mock_get_sw.assert_has_calls([mock.call('fake_text'),
+                                      mock.call('fake_text')], any_order=True)
+        mock_boost.assert_called_once_with(self.ele)
+        mock_get_parent.assert_has_calls([mock.call(self.fake_meta_data),
+                                          mock.call(self.fake_author)])
+        mock_update_score.assert_has_calls([
+            mock.call(self.fake_author, 53),
+            mock.call(self.fake_meta_lang, 26.5)])
+        mock_update_count.assert_has_calls([mock.call(self.fake_author, 1),
+                                            mock.call(self.fake_meta_lang, 1)])
+        mock_get_score.assert_has_calls([mock.call(self.fake_author),
+                                         mock.call(self.fake_meta_lang)])
+
+    @mock.patch.object(ContentExtractor, 'get_score')
+    @mock.patch.object(ContentExtractor, 'update_node_count')
+    @mock.patch.object(ContentExtractor, 'update_score')
+    @mock.patch.object(Parser, 'getParent')
+    @mock.patch.object(ContentExtractor, 'is_boostable')
+    @mock.patch.object(StopWords, 'get_stopword_count')
+    @mock.patch.object(ContentExtractor, 'is_highlink_density')
+    @mock.patch.object(Parser, 'getText')
+    @mock.patch.object(ContentExtractor, 'nodes_to_check')
+    def test_calculate_best_node_15(self, mock_check, mock_get_text,
+                                    mock_highlink, mock_get_sw, mock_boost,
+                                    mock_get_parent, mock_update_score,
+                                    mock_update_count, mock_get_score):
+        mock_ws = mock.MagicMock()
+        mock_check.return_value = [self.fake_meta_data] * 16
+        mock_get_text.return_value = 'fake_text'
+        mock_highlink.return_value = False
+        mock_boost.return_value = True
         mock_get_parent.return_value = self.fake_author
         mock_get_score.return_value = 1
 
         mock_get_sw.return_value = mock_ws
         mock_ws.get_stopword_count.return_value = 3
+
         res = self.extractor.calculate_best_node(self.doc)
-        # TODO(hieulq): adding more checks
+
         self.assertEqual(self.fake_author, res)
+        mock_check.assert_called_once_with(self.doc)
+        mock_get_text.assert_has_calls([mock.call(self.ele),
+                                        mock.call(self.ele)])
+        mock_highlink.assert_has_calls([mock.call(self.ele)] * 16)
+        mock_get_sw.assert_has_calls([mock.call('fake_text'),
+                                      mock.call('fake_text')], any_order=True)
+        mock_boost.assert_has_calls([mock.call(self.ele)] * 16)
+        mock_get_parent.assert_has_calls([mock.call(self.fake_meta_data),
+                                          mock.call(self.fake_author)])
+        mock_update_score.assert_has_calls([mock.call(self.fake_author, 53),
+                                            mock.call(self.fake_author, 26.5)])
+        mock_update_count.assert_has_calls([mock.call(self.fake_author, 1),
+                                            mock.call(self.fake_author, 1)])
+        mock_get_score.assert_called_once_with(self.fake_author)
+
+    @mock.patch.object(ContentExtractor, 'nodes_to_check')
+    def test_calculate_best_node_none(self, mock_check):
+        mock_check.return_value = []
+
+        res = self.extractor.calculate_best_node(self.doc)
+
+        self.assertEqual(None, res)
+        mock_check.assert_called_once_with(self.doc)
+
+
+class VideoExtractorTestCase(base.TestCase):
+
+    def setUp(self):
+        super(VideoExtractorTestCase, self).setUp()
+        self.doc = sentinel.fake_doc
+        self.extractor = extractor.VideoExtractor(config.SourceConfig(),
+                                                  self.doc)
+
+    @mock.patch.object(Parser, 'getAttribute')
+    def test_get_src(self, mock_get):
+        mock_get.side_effect = [None, 'fake_attr']
+        res = self.extractor.get_src(self.doc)
+        self.assertEqual('fake_attr', res)
+        mock_get.assert_has_calls([mock.call(self.doc, 'src'),
+                                   mock.call(self.doc, 'data-src')])
