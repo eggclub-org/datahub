@@ -98,13 +98,10 @@ class Article(base_article.Article):
         self.doc = document_cleaner.clean(self.doc)
 
         self.top_node = self.extractor.calculate_best_node(self.doc)
-        if self.top_node is not None:
+        if self.top_node:
             video_extractor = VideoExtractor(self.config, self.top_node)
             self.set_movies(video_extractor.get_videos())
             self.set_text(self.top_node.xpath)
-
-        if self.config.fetch_images:
-            self.fetch_images()
 
         self.is_parsed = True
         self.release_resources()

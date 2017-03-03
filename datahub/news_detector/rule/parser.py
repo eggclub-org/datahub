@@ -28,10 +28,10 @@ class ObjectParser(object):
     def __init__(self, ele, xpath, text=None):
         self.ele = ele
         self.xpath = xpath
-        if text:
-            self.text = text
-        elif isinstance(ele, lxml.html.HtmlComment):
+        if isinstance(ele, lxml.html.HtmlComment):
             self.text = ele.text
+        elif text:
+            self.text = text
         else:
             self.text = Parser.getText(ele)
 
