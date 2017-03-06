@@ -103,20 +103,19 @@ class ArticleTest(base.BaseTestCase):
         mock_set_video.assert_called_once_with('fake_video')
 
 
+# NOTE(hieulq): we mock multithread request for speeding up the tests
+@mock.patch('newspaper.network.multithread_request')
 class SourceTest(base.BaseTestCase):
 
     def setUp(self):
         super(SourceTest, self).setUp()
-        self.url = "http://fake-url.boo"
+        self.url = 'http://foobar.com'
         self.config = config.SourceConfig()
         self.extractor = Extractor(self.config)
         self.source = article.Source(self.url, config=self.config,
                                      extractor=self.extractor)
-        self.doc = sentinel.html
-        self.clean_doc = sentinel.clean_html
         self.fake_request = MRequest(self.url, self.config)
 
-    @mock.patch('newspaper.network.multithread_request')
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch.object(BaseSource, 'download')
     def test_process_no_download(self, mock_download, mock_from, mock_mreq):
@@ -126,8 +125,9 @@ class SourceTest(base.BaseTestCase):
         self.assertEqual({}, res)
         mock_download.assert_called_once_with()
         mock_from.assert_called_once_with('')
+        mock_mreq.assert_has_calls([mock.call([self.url], self.config),
+                                    mock.call([], self.config)])
 
-    @mock.patch('newspaper.network.multithread_request')
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch.object(BaseSource, 'download')
     def test_process_no_parse(self, mock_download, mock_from, mock_mreq):
@@ -138,3 +138,42 @@ class SourceTest(base.BaseTestCase):
         self.assertEqual({}, res)
         mock_download.assert_called_once_with()
         mock_from.assert_called_once_with('')
+        mock_mreq.assert_has_calls([mock.call([self.url], self.config),
+                                    mock.call([], self.config)])
+
+    @mock.patch.object(article.Article, 'is_valid_url')
+    @mock.patch.object(Extractor, 'get_urls')
+    @mock.patch.object(Extractor, 'get_feed_urls')
+    @mock.patch.object(BaseSource, '_get_category_urls')
+    @mock.patch.object(Parser, 'fromstring')
+    @mock.patch('newspaper.network.get_html')
+    def test_process_ok(self, mock_get_html, mock_from, mock_get_cat,
+                        mock_get_feed, mock_get_url, mock_valid, mock_mreq):
+        self.source.is_downloaded = True
+        fake_req1 = MRequest('http://a.foo.bar', self.config)
+        fake_req1.resp = 'ok1'
+        fake_req2 = MRequest('http://a.foo.bar', self.config)
+        fake_req2.resp = 'ok2'
+        mock_mreq.return_value = [fake_req1, fake_req2]
+        mock_from.side_effect = [None, sentinel.fake_html1,
+                                 sentinel.fake_html2]
+        mock_valid.return_value = True
+        mock_get_url.side_effect = [[('fake_url1', 'fake_title1')],
+                                    [('fake_url2', 'fake_title2')],
+                                    [('fake_url3', 'fake_title3')],
+                                    [('fake_url4', 'fake_title4')]]
+        mock_get_cat.return_value = ['http://a.foo.bar', 'http://b.foo.bar']
+
+        self.source.process()
+
+        # TODO(hieulq): add more check for all mocks
+        mock_get_html.assert_has_calls([mock.call(self.url, self.config),
+                                        mock.call('http://a.foo.bar',
+                                                  response='ok1'),
+                                        mock.call('http://a.foo.bar',
+                                                  response='ok2')],
+                                       any_order=True)
+        mock_mreq.assert_has_calls([mock.call(['http://a.foo.bar',
+                                               'http://b.foo.bar'],
+                                              self.config),
+                                    mock.call([], self.config)])
