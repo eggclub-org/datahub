@@ -72,6 +72,7 @@ class ParserTest(base.BaseTestCase):
         node.xpath.return_value = [self.doc]
         res = Parser.xpath_re(node, 'fake_exp')
         self.assertEqual(1, len(res))
+
         self.assertEqual(self.doc, res[0].ele)
         self.assertEqual('fake_exp', res[0].xpath)
         node.xpath.assert_called_once_with(

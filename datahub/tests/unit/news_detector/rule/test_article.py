@@ -16,6 +16,8 @@ import mock
 from mock import sentinel
 from newspaper.article import Article as BaseArticle
 from newspaper.cleaners import DocumentCleaner
+from newspaper.network import MRequest
+from newspaper.source import Source as BaseSource
 
 from datahub.news_detector.rule import article
 from datahub.news_detector.rule import config
@@ -99,3 +101,40 @@ class ArticleTest(base.BaseTestCase):
         mock_download.assert_called_once_with()
         mock_release.assert_called_once_with()
         mock_set_video.assert_called_once_with('fake_video')
+
+
+class SourceTest(base.BaseTestCase):
+
+    def setUp(self):
+        super(SourceTest, self).setUp()
+        self.url = "http://fake-url.boo"
+        self.config = config.SourceConfig()
+        self.extractor = Extractor(self.config)
+        self.source = article.Source(self.url, config=self.config,
+                                     extractor=self.extractor)
+        self.doc = sentinel.html
+        self.clean_doc = sentinel.clean_html
+        self.fake_request = MRequest(self.url, self.config)
+
+    @mock.patch('newspaper.network.multithread_request')
+    @mock.patch.object(Parser, 'fromstring')
+    @mock.patch.object(BaseSource, 'download')
+    def test_process_no_download(self, mock_download, mock_from, mock_mreq):
+        mock_from.return_value = None
+        mock_mreq.return_value = [self.fake_request]
+        res = self.source.process()
+        self.assertEqual({}, res)
+        mock_download.assert_called_once_with()
+        mock_from.assert_called_once_with('')
+
+    @mock.patch('newspaper.network.multithread_request')
+    @mock.patch.object(Parser, 'fromstring')
+    @mock.patch.object(BaseSource, 'download')
+    def test_process_no_parse(self, mock_download, mock_from, mock_mreq):
+        self.source.is_downloaded = True
+        mock_mreq.return_value = [self.fake_request]
+        mock_from.return_value = None
+        res = self.source.process()
+        self.assertEqual({}, res)
+        mock_download.assert_called_once_with()
+        mock_from.assert_called_once_with('')
