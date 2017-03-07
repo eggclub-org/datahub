@@ -169,3 +169,17 @@ class ParserTest(base.BaseTestCase):
         res = Parser.previousSibling(node)
         self.assertEqual('sib', res.tag)
         self.assertEqual('sib', res.text)
+
+    def test_get_parent_no_obj_parser(self):
+        node = self.doc.find('child')
+        res = Parser.getParent(node)
+        self.assertEqual('html', res.tag)
+        self.assertEqual(None, res.text)
+
+    def test_get_parent_obj_parser(self):
+        node = parser.ObjectParser(self.doc.find('child'),
+                                   'fake_xpath/@1', 'fake_txt')
+        res = Parser.getParent(node)
+        self.assertIsInstance(res, parser.ObjectParser)
+        self.assertEqual('fake_xpath', res.xpath)
+        self.assertEqual('sib test foo', res.text)
