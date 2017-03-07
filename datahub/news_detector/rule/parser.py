@@ -97,70 +97,12 @@ class Parser(parsers.Parser):
         return result
 
     @classmethod
-    def get_unicode_html(cls, html):
-        if isinstance(html, str):
-            return html
-        if not html:
-            return html
-        converted = UnicodeDammit(html, is_html=True)
-        if not converted.unicode_markup:
-            raise Exception(
-                'Failed to detect encoding of article HTML, tried: %s' %
-                ', '.join(converted.tried_encodings))
-        html = converted.unicode_markup
-        return html
-
-    @classmethod
-    def fromstring(cls, html):
-        html = cls.get_unicode_html(html)
-        # Enclosed in a `try` to prevent bringing the entire library
-        # down due to one article (out of potentially many in a `Source`)
-        try:
-            # lxml does not play well with <? ?> encoding tags
-            if html.startswith('<?'):
-                html = re.sub(r'^\<\?.*?\?\>', '', html, flags=re.DOTALL)
-            cls.doc = lxml.html.fromstring(html)
-            return cls.doc
-        except Exception:
-            traceback.print_exc()
-            return
-
-    @classmethod
-    def clean_article_html(cls, node):
-        article_cleaner = lxml.html.clean.Cleaner()
-        article_cleaner.javascript = True
-        article_cleaner.style = True
-        article_cleaner.allow_tags = [
-            'a', 'span', 'p', 'br', 'strong', 'b',
-            'em', 'i', 'tt', 'code', 'pre', 'blockquote', 'img', 'h1',
-            'h2', 'h3', 'h4', 'h5', 'h6',
-            'ul', 'ol', 'li', 'dl', 'dt', 'dd']
-        article_cleaner.remove_unknown_tags = False
-        return article_cleaner.clean_html(node)
-
-    @classmethod
     @check([1], ObjectParser)
     def nodeToString(cls, node):
         """`decode` is needed at the end because `etree.tostring`
         returns a python bytestring
         """
         return lxml.etree.tostring(node, method='html').decode()
-
-    @classmethod
-    def replaceTag(cls, node, tag):
-        node.tag = tag
-
-    @classmethod
-    def stripTags(cls, node, *tags):
-        lxml.etree.strip_tags(node, *tags)
-
-    @classmethod
-    def getElementById(cls, node, idd):
-        selector = '//*[@id="%s"]' % idd
-        elems = node.xpath(selector)
-        if elems:
-            return elems[0]
-        return None
 
     @classmethod
     @check([1], ObjectParser)
@@ -183,16 +125,9 @@ class Parser(parsers.Parser):
         return result
 
     @classmethod
-    def appendChild(cls, node, child):
-        node.append(child)
-
-    @classmethod
-    def childNodes(cls, node):
-        return list(node)
-
-    @classmethod
+    @check([1], ObjectParser)
     def childNodesWithText(cls, node):
-        root = node.ele
+        root = node
         # create the first text node
         # if we have some text in the node
         if root.text:
@@ -214,31 +149,9 @@ class Parser(parsers.Parser):
         return list(root)
 
     @classmethod
-    def textToPara(cls, text):
-        return cls.fromstring(text)
-
-    @classmethod
     @check([1], ObjectParser)
     def getChildren(cls, node):
         return node.getchildren()
-
-    @classmethod
-    def getElementsByTags(cls, node, tags):
-        selector = ','.join(tags)
-        elems = cls.css_select(node, selector)
-        # remove the root node
-        # if we have a selection tag
-        if node in elems:
-            elems.remove(node)
-        return elems
-
-    @classmethod
-    def createElement(cls, tag='p', text=None, tail=None):
-        t = lxml.html.HtmlElement()
-        t.tag = tag
-        t.text = text
-        t.tail = tail
-        return t
 
     @classmethod
     def getComments(cls, node):
@@ -289,13 +202,6 @@ class Parser(parsers.Parser):
         return node.tag
 
     @classmethod
-    def previousSiblings(cls, node):
-        nodes = []
-        for c, n in enumerate(node.itersiblings(preceding=True)):
-            nodes.append(n)
-        return nodes
-
-    @classmethod
     @check([1], ObjectParser)
     def previousSibling(cls, node):
         nodes = []
@@ -304,19 +210,6 @@ class Parser(parsers.Parser):
             if c == 0:
                 break
         return nodes[0] if nodes else None
-
-    @classmethod
-    def nextSibling(cls, node):
-        nodes = []
-        for c, n in enumerate(node.itersiblings(preceding=False)):
-            nodes.append(n)
-            if c == 0:
-                break
-        return nodes[0] if nodes else None
-
-    @classmethod
-    def isTextNode(cls, node):
-        return True if node.tag == 'text' else False
 
     # NOTE(hieulq): get attr of iframe data-src is not implemented in video
     # extractor
@@ -330,22 +223,15 @@ class Parser(parsers.Parser):
         return attr
 
     @classmethod
+    @check([1], ObjectParser)
     def delAttribute(cls, node, attr=None):
         if attr:
-            _attr = node.ele.attrib.get(attr, None)
+            _attr = node.attrib.get(attr, None)
             if _attr:
-                del node.ele.attrib[attr]
+                del node.attrib[attr]
 
     @classmethod
     @check([1], ObjectParser)
     def setAttribute(cls, node, attr=None, value=None):
         if attr and value:
             node.set(attr, value)
-
-    @classmethod
-    def outerHtml(cls, node):
-        e0 = node
-        if e0.tail:
-            e0 = deepcopy(e0)
-            e0.tail = None
-        return cls.nodeToString(e0)

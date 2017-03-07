@@ -166,8 +166,6 @@ class Source(source.Source):
                         parse.urlparse(article.url).path.split('/', 2)[1]
                 if (domain == a_domain) and not (domain in candidates):
                     candidates[domain] = article
-                else:
-                    continue
 
         # Detect format for each domain
         for domain in candidates:

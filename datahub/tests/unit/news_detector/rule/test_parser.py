@@ -53,7 +53,9 @@ class ParserTest(base.BaseTestCase):
 
     def setUp(self):
         super(ParserTest, self).setUp()
-        self.doc = etree.Element("html")
+        self.ele_text = etree.fromstring("<child name='fake'>test</child>")
+        self.doc = etree.fromstring("<html name='froot'><sib>sib</sib><child "
+                                    "name='fake'>test</child>foo</html>")
 
     def test_xpath_re_str(self):
         node = mock.MagicMock()
@@ -93,4 +95,77 @@ class ParserTest(base.BaseTestCase):
     def test_get_text_with_decorator(self):
         node = parser.ObjectParser(self.doc, 'fake_xpath', 'fake_txt')
         res = Parser.getText(node)
-        self.assertEqual('', res)
+        self.assertEqual('sib test foo', res)
+
+    def test_css_select(self):
+        res = Parser.css_select(self.doc, 'html')
+        self.assertEqual(1, len(res))
+        self.assertEqual('sib test foo', res[0].text)
+        self.assertEqual('/html', res[0].xpath)
+
+    def test_node_to_string(self):
+        res = Parser.nodeToString(self.doc)
+        self.assertEqual('<html name="froot"><sib>sib</sib><child '
+                         'name="fake">test</child>foo</html>', res)
+
+    def test_get_ele_by_tag_with_attr(self):
+        res = Parser.getElementsByTag(self.doc, tag='child', attr='name',
+                                      value='fake')
+        self.assertEqual(1, len(res))
+        self.assertEqual('test', res[0].text)
+        self.assertEqual('/html/child', res[0].xpath)
+
+    def test_get_ele_by_tag_no_attr(self):
+        root = etree.Element('root')
+        root.append(self.doc)
+        res = Parser.getElementsByTag(root, tag='root')
+        self.assertEqual([], res)
+
+    def test_child_node_with_text_enable(self):
+        res = Parser.childNodesWithText(self.ele_text)
+        self.assertEqual(1, len(res))
+        self.assertEqual('test', res[0].text)
+        self.assertEqual('text', res[0].tag)
+
+    def test_child_node_with_text_disable(self):
+        res = Parser.childNodesWithText(self.doc)
+        self.assertEqual(3, len(res))
+        self.assertEqual(None, res[0].tail)
+        self.assertEqual('sib', res[0].text)
+        self.assertEqual('sib', res[0].tag)
+        self.assertEqual('foo', res[1].tail)
+        self.assertEqual('test', res[1].text)
+        self.assertEqual('child', res[1].tag)
+        self.assertEqual(None, res[2].tail)
+        self.assertEqual('foo', res[2].text)
+        self.assertEqual('text', res[2].tag)
+
+    def test_get_children(self):
+        res = Parser.getChildren(self.doc)
+        self.assertEqual(2, len(res))
+        self.assertEqual(None, res[0].tail)
+        self.assertEqual('sib', res[0].text)
+        self.assertEqual('sib', res[0].tag)
+        self.assertEqual('foo', res[1].tail)
+        self.assertEqual('test', res[1].text)
+        self.assertEqual('child', res[1].tag)
+
+    def test_remove(self):
+        node = self.doc.find('child')
+        Parser.remove(node)
+        nodes_after_remove = Parser.getElementsByTag(self.doc, tag='child')
+        self.assertEqual(0, len(nodes_after_remove))
+
+    def test_get_attr(self):
+        res = Parser.getAttribute(self.doc, attr='name')
+        self.assertEqual('froot', res)
+
+    def test_del_attr(self):
+        Parser.delAttribute(self.doc, attr='name')
+        self.assertEqual({}, self.doc.attrib)
+
+    def test_previous_sibb(self):
+        node = self.doc.find('child')
+        res = Parser.previousSibling(node)
+        self.assertEqual('sib', res.tag)
+        self.assertEqual('sib', res.text)
