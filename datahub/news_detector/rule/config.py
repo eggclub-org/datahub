@@ -10,10 +10,21 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from datahub.news_detector import engine_base
+from newspaper import configuration
+
+from datahub.news_detector.rule.parser import Parser
 
 
-class Engine(engine_base.Engine):
+class SourceConfig(configuration.Configuration):
 
-    def load_targets(self, context, targets):
-        pass
+    def __init__(self):
+        super(SourceConfig, self).__init__()
+
+        self.set_language("vi")
+        self.use_meta_language = True
+        self.fetch_images = False
+        self.memoize_articles = False
+        self.browser_user_agent = 'datahub/1.0'
+
+    def get_parser(self):
+        return Parser

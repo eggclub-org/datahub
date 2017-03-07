@@ -15,5 +15,5 @@ from datahub.news_detector import engine_base
 
 class Engine(engine_base.Engine):
 
-    def load_targets(self, context, targets):
+    def detect(self, context, target):
         pass

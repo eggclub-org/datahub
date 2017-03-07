@@ -16,7 +16,7 @@ from oslo_utils import importutils
 import datahub.conf
 
 DTREE_ENGINE = 'datahub.news_detector.dtree.engine.Engine'
-READABILITY_ENGINE = 'datahub.news_detector.readability.engine.Engine'
+READABILITY_ENGINE = 'datahub.news_detector.rule.engine.Engine'
 
 LOG = logging.getLogger(__name__)
 CONF = datahub.conf.CONF
@@ -27,13 +27,13 @@ def engine():
     engine_conf = CONF.news_detector.engine
     if engine_conf == 'd-tree':
         engine_class = DTREE_ENGINE
-    elif engine_conf == 'readability':
+    elif engine_conf == 'rule':
         engine_class = READABILITY_ENGINE
 
     if engine_class:
         cls = importutils.import_class(engine_class)
     else:
-        LOG.error('The configuration options for news detector engine is '
+        LOG.error('The configuration options for news news_detector engine is '
                   'wrong! Please identify the correct news detector engine in '
                   'supported engine list.')
         raise NotImplementedError

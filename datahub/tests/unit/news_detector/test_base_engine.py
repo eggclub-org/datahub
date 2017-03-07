@@ -14,7 +14,7 @@
 
 from datahub import news_detector
 from datahub.news_detector.dtree import engine as dtree_engine
-from datahub.news_detector.readability import engine as r_engine
+from datahub.news_detector.rule import engine as r_engine
 from datahub.tests import base
 
 
@@ -25,5 +25,5 @@ class BaseEngineTestCase(base.TestCase):
         self.assertRaises(NotImplementedError, news_detector.engine)
         self.config(engine='d-tree', group='news_detector')
         self.assertIsInstance(news_detector.engine(), dtree_engine.Engine)
-        self.config(engine='readability', group='news_detector')
+        self.config(engine='rule', group='news_detector')
         self.assertIsInstance(news_detector.engine(), r_engine.Engine)
