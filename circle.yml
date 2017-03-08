@@ -1,0 +1,12 @@
+machine:
+  python:
+    version: '3.5.0'
+
+dependencies:
+  override:
+    - pip -V
+    - pip install -U pip virtualenv tox .
+
+test:
+  override:
+    - tox -e integration
