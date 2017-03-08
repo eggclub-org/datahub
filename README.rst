@@ -1,3 +1,6 @@
+.. image:: https://circleci.com/gh/eggclub-org/datahub.svg?style=svg
+    :target: https://circleci.com/gh/eggclub-org/datahub
+
 .. image:: https://travis-ci.org/eggclub-org/datahub.svg?branch=master
     :target: https://travis-ci.org/eggclub-org/datahub
 
