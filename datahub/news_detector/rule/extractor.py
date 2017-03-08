@@ -78,11 +78,13 @@ class Extractor(extractors.ContentExtractor):
             title_text_h1 = ' '.join([x for x in title_text_h1.split() if x])
 
         # title from og:title
+        title_text_fb = ''
         title_element_fb = (self.parser.xpath_re(doc,
                             '//meta[@property="og:title"]/@content') or
                             self.parser.xpath_re(doc,
                             '//meta[@name="og:title"]/@content') or '')
-        title_text_fb = title_element_fb[0].text
+        if title_element_fb:
+            title_text_fb = title_element_fb[0].text
 
         # create filtered versions of title_text, title_text_h1, title_text_fb
         # for finer comparison

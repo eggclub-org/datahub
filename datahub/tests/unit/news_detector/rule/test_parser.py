@@ -112,7 +112,7 @@ class ParserTest(base.BaseTestCase):
         res = Parser.getElementsByTag(self.doc, tag='child', attr='name',
                                       value='fake')
         self.assertEqual(1, len(res))
-        self.assertEqual('test', res[0].text)
+        self.assertEqual(None, res[0].text)
         self.assertEqual('/html/child', res[0].xpath)
 
     def test_get_ele_by_tag_no_attr(self):

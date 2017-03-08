@@ -28,8 +28,10 @@ class ObjectParser(object):
             self.text = ele.text
         elif text:
             self.text = text
-        else:
+        elif ele:
             self.text = Parser.getText(ele)
+        else:
+            self.text = None
 
     def clear(self):
         self.ele.clear()

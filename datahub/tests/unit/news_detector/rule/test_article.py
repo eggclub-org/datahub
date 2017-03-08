@@ -98,6 +98,7 @@ class ArticleTest(base.BaseTestCase):
         self.article.process()
 
         # TODO(hieulq): add more check for all mocks
+        print(str(self.article))
         mock_download.assert_called_once_with()
         mock_release.assert_called_once_with()
         mock_set_video.assert_called_once_with('fake_video')
@@ -125,8 +126,7 @@ class SourceTest(base.BaseTestCase):
         self.assertEqual({}, res)
         mock_download.assert_called_once_with()
         mock_from.assert_called_once_with('')
-        mock_mreq.assert_has_calls([mock.call([self.url], self.config),
-                                    mock.call([], self.config)])
+        mock_mreq.assert_called_once_with([self.url], self.config)
 
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch.object(BaseSource, 'download')
@@ -138,19 +138,16 @@ class SourceTest(base.BaseTestCase):
         self.assertEqual({}, res)
         mock_download.assert_called_once_with()
         mock_from.assert_called_once_with('')
-        mock_mreq.assert_has_calls([mock.call([self.url], self.config),
-                                    mock.call([], self.config)])
+        mock_mreq.assert_called_once_with([self.url], self.config)
 
     @mock.patch.object(article.Article, 'process')
     @mock.patch.object(article.Article, 'is_valid_url')
     @mock.patch.object(Extractor, 'get_urls')
-    @mock.patch.object(Extractor, 'get_feed_urls')
     @mock.patch.object(BaseSource, '_get_category_urls')
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch('newspaper.network.get_html')
-    def test_process_article_ok(self, mock_get_html, mock_from, mock_get_cat,
-                                mock_get_feed, mock_get_url, mock_valid,
-                                mock_process, mock_mreq):
+    def test_process_source_ok(self, mock_get_html, mock_from, mock_get_cat,
+                               mock_get_url, mock_valid, mock_process, mock_mreq):
         self.source.is_downloaded = True
         fake_req1 = MRequest('http://a.foo.bar', self.config)
         fake_req1.resp = 'ok1'
@@ -162,16 +159,12 @@ class SourceTest(base.BaseTestCase):
         mock_valid.return_value = True
         mock_process.side_effect = [None, article.ArticleException]
         mock_get_url.side_effect = [[('fake_url1', 'fake_title1')],
-                                    [('fake_url2', 'fake_title2')],
-                                    ['fake_feed1'], ['fake_feed2']]
+                                    [('fake_url2', 'fake_title2')]]
         mock_get_cat.return_value = ['http://foo.bar/fake_url1',
                                      'http://foo.bar/fake_url2']
-        mock_get_feed.return_value = ['http://foo.bar/fake_feed1',
-                                      'http://foo.bar/fake_feed2']
 
         res = self.source.process()
 
-        # TODO(hieulq): add more check for all mocks
         self.assertEqual(2, len(res))
         mock_get_html.assert_has_calls([mock.call(self.url, self.config),
                                         mock.call('http://a.foo.bar',
@@ -179,10 +172,7 @@ class SourceTest(base.BaseTestCase):
                                         mock.call('http://b.foo.bar',
                                                   response='ok2')],
                                        any_order=True)
-        mock_mreq.assert_has_calls([mock.call(['http://foo.bar/fake_url1',
-                                               'http://foo.bar/fake_url2'],
-                                              self.config),
-                                    mock.call(['http://foo.bar/fake_feed1',
-                                               'http://foo.bar/fake_feed2'],
-                                              self.config)])
+        mock_mreq.assert_called_once_with(['http://foo.bar/fake_url1',
+                                           'http://foo.bar/fake_url2'],
+                                          self.config)
         mock_process.assert_has_calls([mock.call(), mock.call()])

@@ -106,6 +106,16 @@ class Article(base_article.Article):
         self.is_parsed = True
         self.release_resources()
 
+    def __str__(self):
+        return ("==============="
+                "Article with:\n"
+                "+ URL: %s\n"
+                "+ Title: %s\n"
+                "+ Author: %s\n"
+                "+ Date: %s\n"
+                "+ Content: %s\n" % (self.url, self.title, self.authors,
+                                     self.publish_date, self.text))
+
     def process(self):
         self.download()
         self.parse()
@@ -177,23 +187,23 @@ class Source(source.Source):
 
         return candidates
 
-    def feeds_to_articles(self):
-        """Returns articles given the url of a feed
-        """
-        articles = []
-        for feed in self.feeds:
-            urls = self.extractor.get_urls(feed.rss, regex=True)
-            cur_articles = []
-
-            for url in urls:
-                article = Article(url=url, source_url=self.url,
-                                  config=self.config, extractor=self.extractor)
-                cur_articles.append(article)
-
-            cur_articles = self.purge_articles('url', cur_articles)
-            articles.extend(cur_articles)
-
-        return articles
+    # def feeds_to_articles(self):
+    #     """Returns articles given the url of a feed
+    #     """
+    #     articles = []
+    #     for feed in self.feeds:
+    #         urls = self.extractor.get_urls(feed.rss, regex=True)
+    #         cur_articles = []
+    #
+    #         for url in urls:
+    #             article = Article(url=url, source_url=self.url,
+    #                            config=self.config, extractor=self.extractor)
+    #             cur_articles.append(article)
+    #
+    #         cur_articles = self.purge_articles('url', cur_articles)
+    #         articles.extend(cur_articles)
+    #
+    #     return articles
 
     def categories_to_articles(self):
         """Takes the categories, splays them into a big list of urls and churns
@@ -226,8 +236,8 @@ class Source(source.Source):
         self.download_categories()  # mthread
         self.parse_categories()
 
-        self.set_feeds()
-        self.download_feeds()  # mthread
+        # self.set_feeds()
+        # self.download_feeds()  # mthread
         # TODO(hieulq): self.parse_feeds()  # regex for now
 
         self.generate_articles()
