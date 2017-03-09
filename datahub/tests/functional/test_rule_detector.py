@@ -28,9 +28,6 @@ class TestRuleDetector(base.BaseTestCase):
 
     def setUp(self):
         super(TestRuleDetector, self).setUp()
-        with open(DOMAIN_PATH) as f:
-            targets = f.readlines()
-        self.targets = [target.strip() for target in targets]
         self.config = config.SourceConfig()
         self.extractor = Extractor(self.config)
         logging.getLogger("requests").setLevel(logging.WARNING)
@@ -38,9 +35,21 @@ class TestRuleDetector(base.BaseTestCase):
         logging.getLogger("tldextract").setLevel(logging.WARNING)
 
     def test_source_from_domain_list(self):
-        for target in self.targets:
+        with open(DOMAIN_PATH) as f:
+            tars = f.readlines()
+        targets = [target.strip() for target in tars]
+        for target in targets:
             source = article.Source(target, config=self.config,
                                     extractor=self.extractor)
             outs = source.process()
-            for out in outs:
-                print(str(out))
+            if outs:
+                for out in outs:
+                    print(str(out))
+
+    def test_single_source(self):
+        url = "http://vnexpress.net"
+        src = article.Source(url, config=self.config, extractor=self.extractor)
+        res = src.process()
+        for a in src.articles:
+            print(a.url)
+        print('fin')
