@@ -278,9 +278,14 @@ class Extractor(extractors.ContentExtractor):
         ogs = self.parser.css_select(doc, 'meta[property="og:url"]')
         if ogs:
             og = ogs[0]
-            og.xpath += '/@content'
-            og.text += self.parser.getAttribute(og.ele, 'content')
-            og_url = og.text
+            if self.parser.getAttribute(og.ele, 'content'):
+                og.xpath += '/@content'
+                og.text += self.parser.getAttribute(og.ele, 'content')
+                og_url = og.text
+            elif self.parser.getAttribute(og.ele, 'href'):
+                og.xpath += '/@href'
+                og.text += self.parser.getAttribute(og.ele, 'href')
+                og_url = og.text
 
         if canonical:
             return link.xpath
@@ -385,10 +390,12 @@ class Extractor(extractors.ContentExtractor):
                 attr=known_meta_tag['attribute'],
                 value=known_meta_tag['value'])
             if meta_tags:
+                datetime_obj = None
                 date_str = self.parser.getAttribute(
                     meta_tags[0].ele,
                     known_meta_tag['content'])
-                datetime_obj = parse_date_str(date_str)
+                if date_str:
+                    datetime_obj = parse_date_str(date_str)
                 if datetime_obj:
                     return meta_tags[0].xpath + '/@' + \
                            known_meta_tag['content']

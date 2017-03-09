@@ -13,15 +13,15 @@
 # under the License.
 import logging
 
-from datahub.news_detector.rule.article import Source
+from datahub.news_detector.rule import article
 from datahub.news_detector.rule import config
 from datahub.news_detector.rule.extractor import Extractor
 from datahub.tests import base
 
 # This path is for Pycharm dev env
-DOMAIN_PATH = "../../../data/targets"
+# DOMAIN_PATH = "../../../data/targets"
 # This path is for tox env
-# DOMAIN_PATH = "./data/targets"
+DOMAIN_PATH = "./data/targets"
 
 
 class TestRuleDetector(base.BaseTestCase):
@@ -39,8 +39,8 @@ class TestRuleDetector(base.BaseTestCase):
 
     def test_source_from_domain_list(self):
         for target in self.targets:
-            source = Source(target, config=self.config,
-                            extractor=self.extractor)
+            source = article.Source(target, config=self.config,
+                                    extractor=self.extractor)
             outs = source.process()
             for out in outs:
                 print(str(out))

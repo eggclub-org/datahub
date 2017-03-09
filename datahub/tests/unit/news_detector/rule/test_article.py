@@ -147,7 +147,8 @@ class SourceTest(base.BaseTestCase):
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch('newspaper.network.get_html')
     def test_process_source_ok(self, mock_get_html, mock_from, mock_get_cat,
-                               mock_get_url, mock_valid, mock_process, mock_mreq):
+                               mock_get_url, mock_valid, mock_process,
+                               mock_mreq):
         self.source.is_downloaded = True
         fake_req1 = MRequest('http://a.foo.bar', self.config)
         fake_req1.resp = 'ok1'
