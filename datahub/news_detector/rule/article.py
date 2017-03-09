@@ -232,15 +232,20 @@ class Source(source.Source):
         self.download()
         self.parse()
 
-        self.set_categories()
-        self.download_categories()  # mthread
-        self.parse_categories()
+        result = None
+        try:
+            self.set_categories()
+            self.download_categories()  # mthread
+            self.parse_categories()
 
-        # self.set_feeds()
-        # self.download_feeds()  # mthread
-        # TODO(hieulq): self.parse_feeds()  # regex for now
+            # self.set_feeds()
+            # self.download_feeds()  # mthread
+            # TODO(hieulq): self.parse_feeds()  # regex for now
 
-        self.generate_articles()
-        result = self._generate_format_for_categories()
+            self.generate_articles()
+            result = self._generate_format_for_categories()
+        except Exception:
+            LOG.error("Cannot process source with url %s" %
+                      self.url)
 
         return result
