@@ -229,11 +229,11 @@ class Source(source.Source):
         return articles
 
     def process(self):
-        self.download()
-        self.parse()
-
         result = None
         try:
+            self.download()
+            self.parse()
+
             self.set_categories()
             self.download_categories()  # mthread
             self.parse_categories()
