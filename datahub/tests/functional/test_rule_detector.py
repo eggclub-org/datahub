@@ -45,11 +45,11 @@ class TestRuleDetector(base.BaseTestCase):
             if outs:
                 for out in outs:
                     print(str(out))
-    #
-    # def test_single_source(self):
-    #     url = "http://vnexpress.net"
-    #     src = article.Source(url, config=self.config, extractor=self.extractor)
-    #     res = src.process()
-    #     for a in src.articles:
-    #         print(a.url)
-    #     print('fin')
+
+    def test_single_source(self):
+        url = "http://vnexpress.net"
+        src = article.Source(url, config=self.config, extractor=self.extractor)
+        res = src.process()
+        for a in src.articles:
+            print(a.url)
+        print('fin')

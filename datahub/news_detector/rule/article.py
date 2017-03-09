@@ -11,6 +11,7 @@
 # under the License.
 
 import copy
+import fixtures
 from newspaper import article as base_article
 from newspaper.cleaners import DocumentCleaner
 from newspaper import source
@@ -161,12 +162,13 @@ class Source(source.Source):
                    if url not in seen and not seen.add(url)]
         self.categories = [source.Category(url=url) for url in targets]
 
-    def _generate_format_for_categories(self):
+    def _generate_format_for_categories(self, sampling=1, process_all=False):
         categories = self.categories
         articles = self.articles
         candidates = {}
         # Eliminate all articles have same domain, keep only 01 candidate
         for category in categories:
+            flag = sampling
             domain_path = parse.urlparse(category.url).path
             domain = parse.urlparse(category.url).netloc + domain_path
             for article in articles:
@@ -175,15 +177,26 @@ class Source(source.Source):
                     a_domain += "/" + \
                         parse.urlparse(article.url).path.split('/', 2)[1]
                 if (domain == a_domain) and not (domain in candidates):
-                    candidates[domain] = article
+                    if domain not in candidates:
+                        candidates[domain] = []
+                    candidates[domain].append(article)
+                    flag -= 1
+                if flag == 0:
+                    break
 
         # Detect format for each domain
         for domain in candidates:
             try:
-                candidates[domain].process()
+                if process_all:
+                    for key, values in candidates.items():
+                        for value in values:
+                            value.process()
+                else:
+                    candidates[domain][0].process()
             except ArticleException:
                 LOG.error("Cannot process article with url %s" %
-                          candidates[domain].url)
+                          candidates[domain][0].url)
+                continue
 
         return candidates
 
@@ -229,7 +242,7 @@ class Source(source.Source):
         return articles
 
     def process(self):
-        result = None
+        result = {}
         try:
             self.download()
             self.parse()
@@ -244,7 +257,7 @@ class Source(source.Source):
 
             self.generate_articles()
             result = self._generate_format_for_categories()
-        except Exception:
+        except fixtures.TimeoutException:
             LOG.error("Cannot process source with url %s" %
                       self.url)
 

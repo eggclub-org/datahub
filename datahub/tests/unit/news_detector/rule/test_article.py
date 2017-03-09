@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import fixtures
 import mock
 from mock import sentinel
 from newspaper.article import Article as BaseArticle
@@ -112,6 +113,7 @@ class SourceTest(base.BaseTestCase):
         super(SourceTest, self).setUp()
         self.url = 'http://foo.bar'
         self.config = config.SourceConfig()
+        self.config.use_meta_language = True
         self.extractor = Extractor(self.config)
         self.source = article.Source(self.url, config=self.config,
                                      extractor=self.extractor)
@@ -127,6 +129,13 @@ class SourceTest(base.BaseTestCase):
         mock_download.assert_called_once_with()
         mock_from.assert_called_once_with('')
         mock_mreq.assert_called_once_with([self.url], self.config)
+
+    @mock.patch.object(BaseSource, 'download')
+    def test_process_timeout(self, mock_download, mock_mreq):
+        mock_download.side_effect = [fixtures.TimeoutException]
+        res = self.source.process()
+        self.assertEqual({}, res)
+        mock_download.assert_called_once_with()
 
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch.object(BaseSource, 'download')
