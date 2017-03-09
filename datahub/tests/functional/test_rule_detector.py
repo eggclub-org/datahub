@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-import logging
+from oslo_log import log as logging
 
 from datahub.news_detector.rule import article
 from datahub.news_detector.rule import config
@@ -22,6 +22,7 @@ from datahub.tests import base
 # DOMAIN_PATH = "../../../data/targets"
 # This path is for tox env
 DOMAIN_PATH = "./data/targets"
+LOG = logging.getLogger(__name__)
 
 
 class TestRuleDetector(base.BaseTestCase):
@@ -44,12 +45,12 @@ class TestRuleDetector(base.BaseTestCase):
             outs = source.process()
             if outs:
                 for out in outs:
-                    print(str(out))
+                    LOG.info(str(out))
 
     def test_single_source(self):
         url = "http://vnexpress.net"
         src = article.Source(url, config=self.config, extractor=self.extractor)
         res = src.process()
+        self.assertNotEqual(1, len(res))
         for a in src.articles:
-            print(a.url)
-        print('fin')
+            LOG.info(a.url)
