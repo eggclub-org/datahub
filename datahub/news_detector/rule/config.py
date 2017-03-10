@@ -21,7 +21,7 @@ class SourceConfig(configuration.Configuration):
         super(SourceConfig, self).__init__()
 
         self.set_language("vi")
-        self.use_meta_language = True
+        self.use_meta_language = False
         self.fetch_images = False
         self.memoize_articles = False
         self.browser_user_agent = 'datahub/1.0'

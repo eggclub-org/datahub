@@ -246,7 +246,8 @@ class RuleExtractorTestCase(base.TestCase):
                                              value='canonical')
         mock_get_css.assert_called_once_with(self.doc,
                                              'meta[property="og:url"]')
-        mock_get_attr.assert_called_once_with(self.ele, 'content')
+        mock_get_attr.assert_has_calls([mock.call(self.ele, 'content'),
+                                        mock.call(self.ele, 'content')])
 
     @mock.patch.object(Parser, 'css_select')
     @mock.patch.object(Parser, 'getElementsByTag')

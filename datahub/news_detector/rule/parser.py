@@ -21,15 +21,17 @@ from newspaper import text
 
 
 class ObjectParser(object):
-    def __init__(self, ele, xpath, text=None):
+    def __init__(self, ele, xpath, text=''):
         self.ele = ele
         self.xpath = xpath
         if isinstance(ele, lxml.html.HtmlComment):
             self.text = ele.text
         elif text:
             self.text = text
-        else:
+        elif ele is not None:
             self.text = Parser.getText(ele)
+        else:
+            self.text = ''
 
     def clear(self):
         self.ele.clear()
