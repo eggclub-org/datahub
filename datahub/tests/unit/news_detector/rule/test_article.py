@@ -105,8 +105,6 @@ class ArticleTest(base.BaseTestCase):
         mock_set_video.assert_called_once_with('fake_video')
 
 
-# NOTE(hieulq): we mock multithread request for speeding up the tests
-@mock.patch('newspaper.network.multithread_request')
 class SourceTest(base.BaseTestCase):
 
     def setUp(self):
@@ -119,6 +117,7 @@ class SourceTest(base.BaseTestCase):
                                      extractor=self.extractor)
         self.fake_request = MRequest(self.url, self.config)
 
+    @mock.patch('newspaper.network.multithread_request')
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch.object(BaseSource, 'download')
     def test_process_no_download(self, mock_download, mock_from, mock_mreq):
@@ -130,6 +129,7 @@ class SourceTest(base.BaseTestCase):
         mock_from.assert_called_once_with('')
         mock_mreq.assert_called_once_with([self.url], self.config)
 
+    @mock.patch('newspaper.network.multithread_request')
     @mock.patch.object(BaseSource, 'download')
     def test_process_timeout(self, mock_download, mock_mreq):
         mock_download.side_effect = [fixtures.TimeoutException]
@@ -137,6 +137,7 @@ class SourceTest(base.BaseTestCase):
         self.assertEqual({}, res)
         mock_download.assert_called_once_with()
 
+    @mock.patch('newspaper.network.multithread_request')
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch.object(BaseSource, 'download')
     def test_process_no_parse(self, mock_download, mock_from, mock_mreq):
@@ -149,15 +150,16 @@ class SourceTest(base.BaseTestCase):
         mock_from.assert_called_once_with('')
         mock_mreq.assert_called_once_with([self.url], self.config)
 
+    @mock.patch('newspaper.network.multithread_request')
     @mock.patch.object(article.Article, 'process')
     @mock.patch.object(article.Article, 'is_valid_url')
     @mock.patch.object(Extractor, 'get_urls')
     @mock.patch.object(BaseSource, '_get_category_urls')
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch('newspaper.network.get_html')
-    def test_process_source_ok(self, mock_get_html, mock_from, mock_get_cat,
-                               mock_get_url, mock_valid, mock_process,
-                               mock_mreq):
+    def _process_test(self, mock_get_html, mock_from, mock_get_cat,
+                      mock_get_url, mock_valid, mock_process, mock_mreq,
+                      is_process, process_all):
         self.source.is_downloaded = True
         fake_req1 = MRequest('http://a.foo.bar', self.config)
         fake_req1.resp = 'ok1'
@@ -167,13 +169,30 @@ class SourceTest(base.BaseTestCase):
         mock_from.side_effect = [None, sentinel.fake_html1,
                                  sentinel.fake_html2]
         mock_valid.return_value = True
-        mock_process.side_effect = [None, article.ArticleException]
+        mock_process.side_effect = [None, article.ArticleException, None, None]
         mock_get_url.side_effect = [[('fake_url1', 'fake_title1')],
                                     [('fake_url2', 'fake_title2')]]
         mock_get_cat.return_value = ['http://foo.bar/fake_url1',
                                      'http://foo.bar/fake_url2']
 
-        res = self.source.process()
+        if is_process:
+            res = self.source.process()
+        else:
+            # prepare
+            self.source.download()
+            self.source.parse()
+
+            self.source.set_categories()
+            self.source.download_categories()
+            self.source.parse_categories()
+
+            self.source.generate_articles()
+            if process_all:
+                res = self.source._generate_format_for_categories(
+                    sampling=1, process_article=True, process_all=process_all)
+            else:
+                res = self.source._generate_format_for_categories(
+                    sampling=1, process_article=False, process_all=process_all)
 
         self.assertEqual(2, len(res))
         mock_get_html.assert_has_calls([mock.call(self.url, self.config),
@@ -185,4 +204,19 @@ class SourceTest(base.BaseTestCase):
         mock_mreq.assert_called_once_with(['http://foo.bar/fake_url1',
                                            'http://foo.bar/fake_url2'],
                                           self.config)
-        mock_process.assert_has_calls([mock.call(), mock.call()])
+        if is_process:
+            mock_process.assert_has_calls([mock.call(), mock.call()])
+        elif process_all:
+            mock_process.assert_has_calls([mock.call(), mock.call(),
+                                           mock.call(), mock.call()])
+        else:
+            mock_process.assert_not_called()
+
+    def test_generate_format_unprocess(self):
+        self._process_test(is_process=False, process_all=False)
+
+    def test_generate_format_unprocess_all(self):
+        self._process_test(is_process=False, process_all=True)
+
+    def test_process_source_ok(self):
+        self._process_test(is_process=True, process_all=False)

@@ -162,7 +162,9 @@ class Source(source.Source):
                    if url not in seen and not seen.add(url)]
         self.categories = [source.Category(url=url) for url in targets]
 
-    def _generate_format_for_categories(self, sampling=1, process_all=False):
+    def _generate_format_for_categories(self, sampling=1,
+                                        process_article=True,
+                                        process_all=False):
         categories = self.categories
         articles = self.articles
         candidates = {}
@@ -183,6 +185,10 @@ class Source(source.Source):
                     flag -= 1
                 if flag == 0:
                     break
+
+        # Return unprocess article if process_article=False
+        if not process_article:
+            return candidates
 
         # Detect format for each domain
         for domain in candidates:
