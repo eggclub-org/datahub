@@ -168,7 +168,7 @@ class Source(source.Source):
         categories = self.categories
         articles = self.articles
         candidates = {}
-        # Eliminate all articles have same domain, keep only 01 candidate
+        # Eliminate all articles have same domain, keep only sampling candidate
         for category in categories:
             flag = sampling
             domain_path = parse.urlparse(category.url).path
