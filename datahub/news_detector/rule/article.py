@@ -178,7 +178,7 @@ class Source(source.Source):
                 if domain_path:
                     a_domain += "/" + \
                         parse.urlparse(article.url).path.split('/', 2)[1]
-                if (domain == a_domain) and not (domain in candidates):
+                if domain == a_domain:
                     if domain not in candidates:
                         candidates[domain] = []
                     candidates[domain].append(article)
