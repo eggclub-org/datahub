@@ -195,7 +195,7 @@ class ParserTest(base.BaseTestCase):
 
     def test_set_attr_ok(self):
         Parser.setAttribute(self.ele_text, attr='fake_attr',
-                                  value='fake_value')
+                            value='fake_value')
         self.assertEqual({'fake_attr': 'fake_value', 'name': 'fake'},
                          self.ele_text.attrib)
 
