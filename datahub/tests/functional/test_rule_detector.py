@@ -78,6 +78,7 @@ class TestRuleDetector(base.BaseTestCase):
             except fixtures.TimeoutException:
                 LOG.error("Cannot process source with url %s" %
                           source.url)
+                continue
 
     def test_single_source(self):
         url = "http://vnexpress.net"
