@@ -97,7 +97,7 @@ class ArticleTest(base.BaseTestCase):
         self.assertEqual('fake_author1', target.authors)
         mock_xpath.assert_has_calls([mock.call(target.doc, 'fake_title'),
                                      mock.call(target.doc, 'fake_text'),
-                                     mock.call(target.doc, ['fake_author']),
+                                     mock.call(target.doc, 'fake_author'),
                                      mock.call(target.doc, 'fake_date')])
 
     @mock.patch.object(Parser, 'fromstring')

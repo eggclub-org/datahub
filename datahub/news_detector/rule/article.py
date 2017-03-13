@@ -131,7 +131,8 @@ class Article(base_article.Article):
             self.text = res
 
         if template.authors:
-            self.authors = parser.xpath_re(self.doc, template.authors)[0].text
+            self.authors = parser.xpath_re(self.doc, template.authors[0])[0].\
+                text
 
         if template.publish_date:
             self.publish_date = parser.xpath_re(self.doc,
