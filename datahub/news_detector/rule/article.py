@@ -107,6 +107,36 @@ class Article(base_article.Article):
         self.is_parsed = True
         self.release_resources()
 
+    def from_format(self, template):
+        if not template or not isinstance(template, Article) or \
+                not self.is_downloaded:
+            raise ArticleException()
+
+        self.doc = self.config.get_parser().fromstring(self.html)
+        self.clean_doc = copy.deepcopy(self.doc)
+
+        if self.doc is None:
+            # `parse` call failed, return nothing
+            raise ArticleException()
+
+        parser = self.config.get_parser()
+        if template.title:
+            self.title = parser.xpath_re(self.doc, template.title)[0].text
+
+        if template.text:
+            texts = parser.xpath_re(self.doc, template.text)
+            res = ''
+            for text in texts:
+                res += text.text + '\n'
+            self.text = res
+
+        if template.authors:
+            self.authors = parser.xpath_re(self.doc, template.authors)[0].text
+
+        if template.publish_date:
+            self.publish_date = parser.xpath_re(self.doc,
+                                                template.publish_date)[0].text
+
     def __str__(self):
         return ("==============="
                 "Article with:\n"

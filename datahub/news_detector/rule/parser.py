@@ -24,7 +24,8 @@ class ObjectParser(object):
     def __init__(self, ele, xpath, text=''):
         self.ele = ele
         self.xpath = xpath
-        if isinstance(ele, lxml.html.HtmlComment):
+        if isinstance(ele, lxml.html.HtmlComment) or \
+                isinstance(ele, lxml.etree._Comment):
             self.text = ele.text
         elif text:
             self.text = text

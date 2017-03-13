@@ -55,6 +55,56 @@ class ArticleTest(base.BaseTestCase):
         self.assertIsNone(res)
         mock_download.assert_called_once_with()
 
+    def test_from_format_exc(self):
+        self.assertRaises(article.ArticleException,
+                          self.article.from_format, None)
+
+    @mock.patch.object(Parser, 'fromstring')
+    @mock.patch.object(Parser, 'xpath_re')
+    def test_from_format_none(self, mock_xpath, mock_from):
+        target = article.Article('http://foo.bar', config=self.config,
+                                 extractor=self.extractor)
+        target.is_downloaded = True
+        mock_from.return_value = self.doc
+
+        target.from_format(self.article)
+
+        mock_xpath.assert_not_called()
+
+    @mock.patch.object(Parser, 'fromstring')
+    @mock.patch.object(Parser, 'xpath_re')
+    def test_from_format_ok(self, mock_xpath, mock_from):
+        mock_xpath.side_effect = ['fake_title1', 'fake_text1',
+                                  ['fake_author1'], 'fake_date1']
+        self.article.title = 'fake_title'
+        self.article.text = 'fake_text'
+        self.article.publish_date = 'fake_date'
+        self.article.authors = ['fake_author']
+        target = article.Article('http://foo.bar', config=self.config,
+                                 extractor=self.extractor)
+        target.is_downloaded = True
+        mock_from.return_value = self.doc
+
+        target.from_format(self.article)
+
+        self.assertEqual('fake_title1', target.title)
+        self.assertEqual('fake_text1', target.text)
+        self.assertEqual('fake_date1', target.publish_date)
+        self.assertEqual(['fake_author1'], target.authors)
+        mock_xpath.assert_has_calls([mock.call(target.doc, 'fake_title'),
+                                     mock.call(target.doc, 'fake_text'),
+                                     mock.call(target.doc, ['fake_author']),
+                                     mock.call(target.doc, 'fake_date')])
+
+    @mock.patch.object(Parser, 'fromstring')
+    def test_from_format_exc_doc(self, mock_from):
+        target = article.Article('http://foo.bar', config=self.config,
+                                 extractor=self.extractor)
+        target.is_downloaded = True
+        mock_from.return_value = None
+        self.assertRaises(article.ArticleException,
+                          target.from_format, self.article)
+
     @mock.patch.object(BaseArticle, 'set_movies')
     @mock.patch.object(BaseArticle, 'release_resources')
     @mock.patch.object(VideoExtractor, 'get_videos')
