@@ -21,9 +21,9 @@ from datahub.news_detector.rule.extractor import Extractor
 from datahub.tests import base
 
 # This path is for Pycharm dev env
-DOMAIN_PATH = "../../../data/targets"
+# DOMAIN_PATH = "../../../data/targets"
 # This path is for tox env
-# DOMAIN_PATH = "./data/targets"
+DOMAIN_PATH = "./data/targets"
 LOG = logging.getLogger(__name__)
 
 
