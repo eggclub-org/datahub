@@ -237,6 +237,8 @@ class Source(source.Source):
             except ArticleException:
                 LOG.error("Cannot process article with url %s" %
                           candidates[domain][0].url)
+                if not process_all:
+                    del candidates[domain][0]
                 continue
 
         return candidates
