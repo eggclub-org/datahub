@@ -81,9 +81,11 @@ class TestRuleDetector(base.BaseTestCase):
                 continue
 
     def test_single_source(self):
-        url = "http://vnexpress.net"
-        src = article.Source(url, config=self.config, extractor=self.extractor)
-        res = src.process()
-        self.assertNotEqual(1, len(res))
-        for a in src.articles:
-            LOG.info(a.url)
+        url = "http://www.baotainguyenmoitruong.vn/kinh-te/" \
+              "201703/gpp-ca-mau-san-sang-don-dong-khi-dau-tien-2789387/"
+        src = article.Article(url, config=self.config,
+                              extractor=self.extractor)
+        src.process()
+        # self.assertNotEqual(1, len(res))
+        # for a in src.articles:
+        #     LOG.info(a.url)

@@ -359,6 +359,7 @@ class RuleExtractorTestCase(base.TestCase):
                       value='article:published_time'),
             mock.call(self.doc, attr='name', value='OriginalPublicationDate'),
             mock.call(self.doc, attr='itemprop', value='datePublished'),
+            mock.call(self.doc, attr='itemprop', value='datePublished'),
             mock.call(self.doc, attr='property', value='og:published_time'),
             mock.call(self.doc, attr='name', value='article_date_original'),
             mock.call(self.doc, attr='name', value='publication_date'),

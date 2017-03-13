@@ -227,19 +227,24 @@ class Source(source.Source):
 
         # Detect format for each domain
         for domain in candidates:
-            try:
-                if process_all:
-                    for key, values in candidates.items():
-                        for value in values:
-                            value.process()
-                else:
-                    candidates[domain][0].process()
-            except ArticleException:
-                LOG.error("Cannot process article with url %s" %
-                          candidates[domain][0].url)
-                if not process_all:
-                    del candidates[domain][0]
-                continue
+            while True:
+                try:
+                    if process_all:
+                        # NOTE(hieulq): not test this block
+                        for key, values in candidates.items():
+                            for value in values:
+                                value.process()
+                    elif len(candidates[domain]) > 0:
+                        candidates[domain][0].process()
+                except ArticleException:
+                    LOG.error("Cannot process article with url %s" %
+                              candidates[domain][0].url)
+                    if not process_all:
+                        del candidates[domain][0]
+                    if len(candidates[domain]) < 1:
+                        del candidates[domain]
+                    continue
+                break
 
         return candidates
 

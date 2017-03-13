@@ -372,6 +372,8 @@ class Extractor(extractors.ContentExtractor):
             {'attribute': 'name', 'value': 'OriginalPublicationDate',
              'content': 'content'},
             {'attribute': 'itemprop', 'value': 'datePublished',
+             'content': 'content'},
+            {'attribute': 'itemprop', 'value': 'datePublished',
              'content': 'datetime'},
             {'attribute': 'property', 'value': 'og:published_time',
              'content': 'content'},
