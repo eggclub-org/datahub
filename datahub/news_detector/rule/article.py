@@ -121,7 +121,9 @@ class Article(base_article.Article):
 
         parser = self.config.get_parser()
         if template.title:
-            self.title = parser.xpath_re(self.doc, template.title)[0].text
+            res = parser.xpath_re(self.doc, template.title)
+            if res:
+                self.title = res[0].text
 
         if template.text:
             texts = parser.xpath_re(self.doc, template.text)
@@ -131,12 +133,14 @@ class Article(base_article.Article):
             self.text = res
 
         if template.authors:
-            self.authors = parser.xpath_re(self.doc, template.authors[0])[0].\
-                text
+            res = parser.xpath_re(self.doc, template.authors[0])
+            if res:
+                self.authors = res[0].text
 
         if template.publish_date:
-            self.publish_date = parser.xpath_re(self.doc,
-                                                template.publish_date)[0].text
+            res = parser.xpath_re(self.doc, template.publish_date)
+            if res:
+                self.publish_date = res[0].text
 
     def __str__(self):
         return ("==============="
