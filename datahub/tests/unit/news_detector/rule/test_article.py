@@ -24,6 +24,7 @@ from datahub.news_detector.rule import article
 from datahub.news_detector.rule import config
 from datahub.news_detector.rule.extractor import Extractor
 from datahub.news_detector.rule.extractor import VideoExtractor
+from datahub.news_detector.rule.parser import ObjectParser
 from datahub.news_detector.rule.parser import Parser
 
 from datahub.tests import base
@@ -74,8 +75,11 @@ class ArticleTest(base.BaseTestCase):
     @mock.patch.object(Parser, 'fromstring')
     @mock.patch.object(Parser, 'xpath_re')
     def test_from_format_ok(self, mock_xpath, mock_from):
-        mock_xpath.side_effect = ['fake_title1', 'fake_text1',
-                                  ['fake_author1'], 'fake_date1']
+        mock_xpath.side_effect = [
+            [ObjectParser(self.doc, 'xpath1', 'fake_title1')],
+            [ObjectParser(self.doc, 'xpath1', 'fake_text1')],
+            [ObjectParser(self.doc, 'xpath1', 'fake_author1')],
+            [ObjectParser(self.doc, 'xpath1', 'fake_date1')]]
         self.article.title = 'fake_title'
         self.article.text = 'fake_text'
         self.article.publish_date = 'fake_date'
@@ -88,9 +92,9 @@ class ArticleTest(base.BaseTestCase):
         target.from_format(self.article)
 
         self.assertEqual('fake_title1', target.title)
-        self.assertEqual('fake_text1', target.text)
+        self.assertEqual('fake_text1\n', target.text)
         self.assertEqual('fake_date1', target.publish_date)
-        self.assertEqual(['fake_author1'], target.authors)
+        self.assertEqual('fake_author1', target.authors)
         mock_xpath.assert_has_calls([mock.call(target.doc, 'fake_title'),
                                      mock.call(target.doc, 'fake_text'),
                                      mock.call(target.doc, ['fake_author']),

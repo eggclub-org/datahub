@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import fixtures
+import lxml.etree
 from oslo_log import log as logging
 
 from datahub.news_detector.rule import article
@@ -63,11 +64,13 @@ class TestRuleDetector(base.BaseTestCase):
                         try:
                             art.download()
                             art.from_format(template)
-                        except article.ArticleException:
+                        except (article.ArticleException,
+                                lxml.etree.XPathEvalError):
                             LOG.error("Error getting content of article\n"
                                       "%s \n"
                                       "from template of article \n"
                                       "%s \n" % (str(art), str(template)))
+                            continue
                 if outs:
                     for out in outs:
                         LOG.info('==============')
