@@ -10,7 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from html.parser import HTMLParser
+import html
 
 import lxml.etree
 import lxml.html
@@ -24,7 +24,8 @@ class ObjectParser(object):
     def __init__(self, ele, xpath, text=''):
         self.ele = ele
         self.xpath = xpath
-        if isinstance(ele, lxml.html.HtmlComment):
+        if isinstance(ele, lxml.html.HtmlComment) or \
+                isinstance(ele, lxml.etree._Comment):
             self.text = ele.text
         elif text:
             self.text = text
@@ -217,7 +218,7 @@ class Parser(parsers.Parser):
         if attr:
             attr = node.attrib.get(attr, None)
         if attr:
-            attr = HTMLParser().unescape(attr)
+            attr = html.unescape(attr)
         return attr
 
     @classmethod

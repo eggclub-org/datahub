@@ -36,6 +36,8 @@ class ObjectParserTest(base.BaseTestCase):
         self.assertEqual('comment', obj_comment.text)
         obj_text = parser.ObjectParser(self.root, 'xpath3', 'foobar')
         self.assertEqual('foobar', obj_text.text)
+        obj_text = parser.ObjectParser(None, 'xpath3', None)
+        self.assertEqual('', obj_text.text)
 
     def test_clear(self):
         obj_text = parser.ObjectParser(self.root, 'xpath3', 'foobar')
@@ -54,7 +56,8 @@ class ParserTest(base.BaseTestCase):
     def setUp(self):
         super(ParserTest, self).setUp()
         self.ele_text = etree.fromstring("<child name='fake'>test</child>")
-        self.doc = etree.fromstring("<html name='froot'><sib>sib</sib><child "
+        self.doc = etree.fromstring("<!-- comment -->"
+                                    "<html name='froot'><sib>sib</sib><child "
                                     "name='fake'>test</child>foo</html>")
 
     def test_xpath_re_str(self):
@@ -183,3 +186,24 @@ class ParserTest(base.BaseTestCase):
         self.assertIsInstance(res, parser.ObjectParser)
         self.assertEqual('fake_xpath', res.xpath)
         self.assertEqual('sib test foo', res.text)
+
+    def test_get_comments(self):
+        res = Parser.getComments(self.doc)
+        self.assertEqual(1, len(res))
+        self.assertEqual('/comment()', res[0].xpath)
+        self.assertEqual('comment', res[0].text.strip())
+
+    def test_set_attr_ok(self):
+        Parser.setAttribute(self.ele_text, attr='fake_attr',
+                            value='fake_value')
+        self.assertEqual({'fake_attr': 'fake_value', 'name': 'fake'},
+                         self.ele_text.attrib)
+
+    def test_set_attr_none(self):
+        Parser.setAttribute(self.ele_text)
+        self.assertEqual({'name': 'fake'},
+                         self.ele_text.attrib)
+
+    def test_get_tag(self):
+        tag = Parser.getTag(self.ele_text)
+        self.assertEqual('child', tag)

@@ -12,7 +12,10 @@
 
 from newspaper import configuration
 
+import datahub.conf
 from datahub.news_detector.rule.parser import Parser
+
+CONF = datahub.conf.CONF
 
 
 class SourceConfig(configuration.Configuration):
@@ -20,7 +23,7 @@ class SourceConfig(configuration.Configuration):
     def __init__(self):
         super(SourceConfig, self).__init__()
 
-        self.set_language("vi")
+        self.set_language(CONF.news_detector.language)
         self.use_meta_language = False
         self.fetch_images = False
         self.memoize_articles = False

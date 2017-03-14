@@ -20,13 +20,16 @@ from newspaper import utils
 from oslo_log import log as logging
 from urllib import parse
 
+import datahub.conf
 from datahub.news_detector.rule.extractor import VideoExtractor
 
+CONF = datahub.conf.CONF
 LOG = logging.getLogger(__name__)
 
 
 class ArticleException(Exception):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(ArticleException, self).__init__(*args, **kwargs)
 
 
 class Article(base_article.Article):
@@ -34,6 +37,7 @@ class Article(base_article.Article):
     def __init__(self, url, title='', source_url='', config=None,
                  extractor=None, **kwargs):
         super(Article, self).__init__(url, title, source_url, config, **kwargs)
+        self.title = ''
         self.link_hash = None
         self.extractor = extractor
 
@@ -44,7 +48,7 @@ class Article(base_article.Article):
 
     def parse(self):
         if not self.is_downloaded:
-            raise ArticleException()
+            raise ArticleException(self)
 
         self.doc = self.config.get_parser().fromstring(self.html)
         self.clean_doc = copy.deepcopy(self.doc)
@@ -54,6 +58,13 @@ class Article(base_article.Article):
             return
 
         # TODO(hieulq): Fix this, sync in our fix_url() method
+        meta_lang = self.extractor.get_meta_lang(self.clean_doc)
+        if CONF.news_detector.language not in meta_lang[0]:
+            return
+
+        if self.config.use_meta_language:
+            self.extractor.update_language(meta_lang[0])
+
         parse_candidate = self.get_parse_candidate()
         self.link_hash = parse_candidate.link_hash  # MD5
 
@@ -64,12 +75,6 @@ class Article(base_article.Article):
 
         authors = self.extractor.get_authors(self.clean_doc)
         self.set_authors(authors)
-
-        meta_lang = self.extractor.get_meta_lang(self.clean_doc)
-        self.set_meta_language(meta_lang[1])
-
-        if self.config.use_meta_language:
-            self.extractor.update_language(meta_lang[0])
 
         meta_favicon = self.extractor.get_favicon(self.clean_doc)
         self.set_meta_favicon(meta_favicon)
@@ -103,6 +108,44 @@ class Article(base_article.Article):
             video_extractor = VideoExtractor(self.config, self.top_node)
             self.set_movies(video_extractor.get_videos())
             self.set_text(self.top_node.xpath)
+
+        self.is_parsed = True
+        self.release_resources()
+
+    def from_format(self, template):
+        if not template or not isinstance(template, Article) or \
+                not template.is_parsed or not self.is_downloaded:
+            raise ArticleException(self)
+
+        self.doc = self.config.get_parser().fromstring(self.html)
+        self.clean_doc = copy.deepcopy(self.doc)
+
+        if self.doc is None:
+            # `parse` call failed, return nothing
+            raise ArticleException(self)
+
+        parser = self.config.get_parser()
+        if template.title:
+            res = parser.xpath_re(self.doc, template.title)
+            if res:
+                self.title = res[0].text
+
+        if template.text:
+            texts = parser.xpath_re(self.doc, template.text)
+            res = ''
+            for text in texts:
+                res += text.text + '\n'
+            self.text = res
+
+        if template.authors:
+            res = parser.xpath_re(self.doc, template.authors[0])
+            if res:
+                self.authors = res[0].text
+
+        if template.publish_date:
+            res = parser.xpath_re(self.doc, template.publish_date)
+            if res:
+                self.publish_date = res[0].text
 
         self.is_parsed = True
         self.release_resources()
@@ -168,7 +211,7 @@ class Source(source.Source):
         categories = self.categories
         articles = self.articles
         candidates = {}
-        # Eliminate all articles have same domain, keep only 01 candidate
+        # Eliminate all articles have same domain, keep only sampling candidate
         for category in categories:
             flag = sampling
             domain_path = parse.urlparse(category.url).path
@@ -191,18 +234,34 @@ class Source(source.Source):
             return candidates
 
         # Detect format for each domain
-        for domain in candidates:
-            try:
-                if process_all:
-                    for key, values in candidates.items():
-                        for value in values:
-                            value.process()
-                else:
-                    candidates[domain][0].process()
-            except ArticleException:
-                LOG.error("Cannot process article with url %s" %
-                          candidates[domain][0].url)
-                continue
+        if process_all:
+            for key, values in candidates.items():
+                for value in values:
+                    try:
+                        value.process()
+                    except ArticleException:
+                        LOG.error("Cannot process article with url %s" %
+                                  value.url)
+                        continue
+        else:
+            for domain in list(candidates):
+                while True:
+                    try:
+                        if len(candidates[domain]) > 0:
+                            candidates[domain][0].process()
+                            if not candidates[domain][0].is_parsed:
+                                raise ArticleException(candidates[domain][0])
+                        else:
+                            break
+                    except ArticleException:
+                        LOG.error("Cannot process article with url %s" %
+                                  candidates[domain][0].url)
+                        del candidates[domain][0]
+                        if len(candidates[domain]) < 1:
+                            del candidates[domain]
+                            break
+                        continue
+                    break
 
         return candidates
 

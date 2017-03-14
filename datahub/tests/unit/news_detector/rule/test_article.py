@@ -24,12 +24,13 @@ from datahub.news_detector.rule import article
 from datahub.news_detector.rule import config
 from datahub.news_detector.rule.extractor import Extractor
 from datahub.news_detector.rule.extractor import VideoExtractor
+from datahub.news_detector.rule.parser import ObjectParser
 from datahub.news_detector.rule.parser import Parser
 
 from datahub.tests import base
 
 
-class ArticleTest(base.BaseTestCase):
+class ArticleTest(base.TestCase):
 
     def setUp(self):
         super(ArticleTest, self).setUp()
@@ -54,6 +55,61 @@ class ArticleTest(base.BaseTestCase):
         res = self.article.process()
         self.assertIsNone(res)
         mock_download.assert_called_once_with()
+
+    def test_from_format_exc(self):
+        self.assertRaises(article.ArticleException,
+                          self.article.from_format, None)
+
+    @mock.patch.object(Parser, 'fromstring')
+    @mock.patch.object(Parser, 'xpath_re')
+    def test_from_format_none(self, mock_xpath, mock_from):
+        target = article.Article('http://foo.bar', config=self.config,
+                                 extractor=self.extractor)
+        target.is_downloaded = True
+        self.article.is_parsed = True
+        mock_from.return_value = self.doc
+
+        target.from_format(self.article)
+
+        mock_xpath.assert_not_called()
+
+    @mock.patch.object(Parser, 'fromstring')
+    @mock.patch.object(Parser, 'xpath_re')
+    def test_from_format_ok(self, mock_xpath, mock_from):
+        mock_xpath.side_effect = [
+            [ObjectParser(self.doc, 'xpath1', 'fake_title1')],
+            [ObjectParser(self.doc, 'xpath1', 'fake_text1')],
+            [ObjectParser(self.doc, 'xpath1', 'fake_author1')],
+            [ObjectParser(self.doc, 'xpath1', 'fake_date1')]]
+        self.article.title = 'fake_title'
+        self.article.text = 'fake_text'
+        self.article.publish_date = 'fake_date'
+        self.article.authors = ['fake_author']
+        self.article.is_parsed = True
+        target = article.Article('http://foo.bar', config=self.config,
+                                 extractor=self.extractor)
+        target.is_downloaded = True
+        mock_from.return_value = self.doc
+
+        target.from_format(self.article)
+
+        self.assertEqual('fake_title1', target.title)
+        self.assertEqual('fake_text1\n', target.text)
+        self.assertEqual('fake_date1', target.publish_date)
+        self.assertEqual('fake_author1', target.authors)
+        mock_xpath.assert_has_calls([mock.call(target.doc, 'fake_title'),
+                                     mock.call(target.doc, 'fake_text'),
+                                     mock.call(target.doc, 'fake_author'),
+                                     mock.call(target.doc, 'fake_date')])
+
+    @mock.patch.object(Parser, 'fromstring')
+    def test_from_format_exc_doc(self, mock_from):
+        target = article.Article('http://foo.bar', config=self.config,
+                                 extractor=self.extractor)
+        target.is_downloaded = True
+        mock_from.return_value = None
+        self.assertRaises(article.ArticleException,
+                          target.from_format, self.article)
 
     @mock.patch.object(BaseArticle, 'set_movies')
     @mock.patch.object(BaseArticle, 'release_resources')
@@ -82,7 +138,7 @@ class ArticleTest(base.BaseTestCase):
         self.article.is_downloaded = True
         mock_get_title.return_value = 'fake_title'
         mock_get_auth.return_value = ['fake_auth']
-        mock_get_lang.return_value = 'fake_lang'
+        mock_get_lang.return_value = ('vi_VN', 'fake_lang')
         mock_get_ico.return_value = 'fake_ico'
         mock_get_desc.return_value = 'fake_desc'
         mock_get_link.return_value = 'fake_link'
@@ -194,7 +250,6 @@ class SourceTest(base.BaseTestCase):
                 res = self.source._generate_format_for_categories(
                     sampling=1, process_article=False, process_all=process_all)
 
-        self.assertEqual(2, len(res))
         mock_get_html.assert_has_calls([mock.call(self.url, self.config),
                                         mock.call('http://a.foo.bar',
                                                   response='ok1'),
@@ -205,11 +260,13 @@ class SourceTest(base.BaseTestCase):
                                            'http://foo.bar/fake_url2'],
                                           self.config)
         if is_process:
+            self.assertEqual(0, len(res))
             mock_process.assert_has_calls([mock.call(), mock.call()])
         elif process_all:
-            mock_process.assert_has_calls([mock.call(), mock.call(),
-                                           mock.call(), mock.call()])
+            self.assertEqual(2, len(res))
+            mock_process.assert_has_calls([mock.call(), mock.call()])
         else:
+            self.assertEqual(2, len(res))
             mock_process.assert_not_called()
 
     def test_generate_format_unprocess(self):

@@ -11,6 +11,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import fixtures
+import lxml.etree
 from oslo_log import log as logging
 
 from datahub.news_detector.rule import article
@@ -40,17 +42,50 @@ class TestRuleDetector(base.BaseTestCase):
             tars = f.readlines()
         targets = [target.strip() for target in tars]
         for target in targets:
-            source = article.Source(target, config=self.config,
-                                    extractor=self.extractor)
-            outs = source.process()
-            if outs:
-                for out in outs:
-                    LOG.info(str(out))
+            try:
+                source = article.Source(target, config=self.config,
+                                        extractor=self.extractor)
+                source.download()
+                source.parse()
+
+                source.set_categories()
+                source.download_categories()  # mthread
+                source.parse_categories()
+
+                source.generate_articles()
+                outs = source._generate_format_for_categories(
+                    sampling=3, process_all=False)
+                template = None
+                for domain, articles in outs.items():
+                    for index, art in enumerate(articles):
+                        if index == 0:
+                            template = art
+                            continue
+                        try:
+                            art.download()
+                            art.from_format(template)
+                        except (article.ArticleException,
+                                lxml.etree.XPathEvalError):
+                            LOG.error("Error getting content of article\n"
+                                      "%s \n"
+                                      "from template of article \n"
+                                      "%s \n" % (str(art), str(template)))
+                            continue
+                if outs:
+                    for out in outs:
+                        LOG.info('==============')
+                        LOG.info(str(out))
+            except fixtures.TimeoutException:
+                LOG.error("Cannot process source with url %s" %
+                          source.url)
+                continue
 
     def test_single_source(self):
-        url = "http://vnexpress.net"
-        src = article.Source(url, config=self.config, extractor=self.extractor)
-        res = src.process()
-        self.assertNotEqual(1, len(res))
-        for a in src.articles:
-            LOG.info(a.url)
+        url = "http://www.baotainguyenmoitruong.vn/kinh-te/" \
+              "201703/gpp-ca-mau-san-sang-don-dong-khi-dau-tien-2789387/"
+        src = article.Article(url, config=self.config,
+                              extractor=self.extractor)
+        src.process()
+        # self.assertNotEqual(1, len(res))
+        # for a in src.articles:
+        #     LOG.info(a.url)

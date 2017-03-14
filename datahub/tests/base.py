@@ -16,18 +16,18 @@ import os
 
 import fixtures
 import mock
-from oslo_config import cfg
 from oslo_log import log
 from oslotest import base
 import testscenarios
 
 from datahub.common import context as dh_context
+import datahub.conf
 from datahub.tests import conf_fixture
 
-CONF = cfg.CONF
+CONF = datahub.conf.CONF
 try:
     log.register_options(CONF)
-except cfg.ArgsAlreadyParsedError:
+except CONF.ArgsAlreadyParsedError:
     pass
 CONF.set_override('use_stderr', False)
 
@@ -37,7 +37,7 @@ class BaseTestCase(testscenarios.WithScenarios, base.BaseTestCase):
 
     def setUp(self):
         super(BaseTestCase, self).setUp()
-        self.addCleanup(cfg.CONF.reset)
+        self.addCleanup(CONF.reset)
 
 
 class TestCase(base.BaseTestCase):

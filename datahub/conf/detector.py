@@ -23,6 +23,10 @@ detector_engine_opts = [
                     'for auto-detect article format. The list of option is:'
                     'd-tree, hybrid, rule'
                     'Default is d-tree engine.'),
+    cfg.StrOpt('language',
+               default='vi',
+               help='Decide which language of article that datahub will crawl.'
+                    'Default is vi - vietnamese.'),
 ]
 
 
