@@ -81,7 +81,8 @@ class TestRuleDetector(base.BaseTestCase):
                 continue
 
     def test_single_source(self):
-        url = 'http://vietnamnews.vn/life-style/345723/ha-noi-fashionistas-strut-their-style.html'
+        url = "http://www.baotainguyenmoitruong.vn/kinh-te/" \
+              "201703/gpp-ca-mau-san-sang-don-dong-khi-dau-tien-2789387/"
         src = article.Article(url, config=self.config,
                               extractor=self.extractor)
         src.process()
