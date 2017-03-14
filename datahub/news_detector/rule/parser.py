@@ -10,7 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from html.parser import HTMLParser
+import html
 
 import lxml.etree
 import lxml.html
@@ -218,7 +218,7 @@ class Parser(parsers.Parser):
         if attr:
             attr = node.attrib.get(attr, None)
         if attr:
-            attr = HTMLParser().unescape(attr)
+            attr = html.unescape(attr)
         return attr
 
     @classmethod
