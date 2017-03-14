@@ -54,7 +54,7 @@ class TestRuleDetector(base.BaseTestCase):
 
                 source.generate_articles()
                 outs = source._generate_format_for_categories(
-                    sampling=10, process_all=False)
+                    sampling=3, process_all=False)
                 template = None
                 for domain, articles in outs.items():
                     for index, art in enumerate(articles):
