@@ -35,6 +35,7 @@ class Article(base_article.Article):
     def __init__(self, url, title='', source_url='', config=None,
                  extractor=None, **kwargs):
         super(Article, self).__init__(url, title, source_url, config, **kwargs)
+        self.title = ''
         self.link_hash = None
         self.extractor = extractor
 
