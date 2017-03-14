@@ -30,7 +30,7 @@ from datahub.news_detector.rule.parser import Parser
 from datahub.tests import base
 
 
-class ArticleTest(base.BaseTestCase):
+class ArticleTest(base.TestCase):
 
     def setUp(self):
         super(ArticleTest, self).setUp()
@@ -66,6 +66,7 @@ class ArticleTest(base.BaseTestCase):
         target = article.Article('http://foo.bar', config=self.config,
                                  extractor=self.extractor)
         target.is_downloaded = True
+        self.article.is_parsed = True
         mock_from.return_value = self.doc
 
         target.from_format(self.article)
@@ -84,6 +85,7 @@ class ArticleTest(base.BaseTestCase):
         self.article.text = 'fake_text'
         self.article.publish_date = 'fake_date'
         self.article.authors = ['fake_author']
+        self.article.is_parsed = True
         target = article.Article('http://foo.bar', config=self.config,
                                  extractor=self.extractor)
         target.is_downloaded = True
@@ -136,7 +138,7 @@ class ArticleTest(base.BaseTestCase):
         self.article.is_downloaded = True
         mock_get_title.return_value = 'fake_title'
         mock_get_auth.return_value = ['fake_auth']
-        mock_get_lang.return_value = 'fake_lang'
+        mock_get_lang.return_value = ('vi_VN', 'fake_lang')
         mock_get_ico.return_value = 'fake_ico'
         mock_get_desc.return_value = 'fake_desc'
         mock_get_link.return_value = 'fake_link'
@@ -258,7 +260,7 @@ class SourceTest(base.BaseTestCase):
                                            'http://foo.bar/fake_url2'],
                                           self.config)
         if is_process:
-            self.assertEqual(1, len(res))
+            self.assertEqual(0, len(res))
             mock_process.assert_has_calls([mock.call(), mock.call()])
         elif process_all:
             self.assertEqual(2, len(res))

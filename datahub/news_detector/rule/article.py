@@ -20,8 +20,10 @@ from newspaper import utils
 from oslo_log import log as logging
 from urllib import parse
 
+import datahub.conf
 from datahub.news_detector.rule.extractor import VideoExtractor
 
+CONF = datahub.conf.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -56,6 +58,13 @@ class Article(base_article.Article):
             return
 
         # TODO(hieulq): Fix this, sync in our fix_url() method
+        meta_lang = self.extractor.get_meta_lang(self.clean_doc)
+        if CONF.news_detector.language not in meta_lang[0]:
+            return
+
+        if self.config.use_meta_language:
+            self.extractor.update_language(meta_lang[0])
+
         parse_candidate = self.get_parse_candidate()
         self.link_hash = parse_candidate.link_hash  # MD5
 
@@ -66,12 +75,6 @@ class Article(base_article.Article):
 
         authors = self.extractor.get_authors(self.clean_doc)
         self.set_authors(authors)
-
-        meta_lang = self.extractor.get_meta_lang(self.clean_doc)
-        self.set_meta_language(meta_lang[1])
-
-        if self.config.use_meta_language:
-            self.extractor.update_language(meta_lang[0])
 
         meta_favicon = self.extractor.get_favicon(self.clean_doc)
         self.set_meta_favicon(meta_favicon)
@@ -111,7 +114,7 @@ class Article(base_article.Article):
 
     def from_format(self, template):
         if not template or not isinstance(template, Article) or \
-                not self.is_downloaded:
+                not template.is_parsed or not self.is_downloaded:
             raise ArticleException(self)
 
         self.doc = self.config.get_parser().fromstring(self.html)
@@ -143,6 +146,9 @@ class Article(base_article.Article):
             res = parser.xpath_re(self.doc, template.publish_date)
             if res:
                 self.publish_date = res[0].text
+
+        self.is_parsed = True
+        self.release_resources()
 
     def __str__(self):
         return ("==============="
@@ -243,6 +249,8 @@ class Source(source.Source):
                     try:
                         if len(candidates[domain]) > 0:
                             candidates[domain][0].process()
+                            if not candidates[domain][0].is_parsed:
+                                raise ArticleException(candidates[domain][0])
                         else:
                             break
                     except ArticleException:
