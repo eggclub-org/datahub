@@ -248,7 +248,6 @@ class SourceTest(base.BaseTestCase):
                 res = self.source._generate_format_for_categories(
                     sampling=1, process_article=False, process_all=process_all)
 
-        self.assertEqual(2, len(res))
         mock_get_html.assert_has_calls([mock.call(self.url, self.config),
                                         mock.call('http://a.foo.bar',
                                                   response='ok1'),
@@ -259,11 +258,13 @@ class SourceTest(base.BaseTestCase):
                                            'http://foo.bar/fake_url2'],
                                           self.config)
         if is_process:
+            self.assertEqual(1, len(res))
             mock_process.assert_has_calls([mock.call(), mock.call()])
         elif process_all:
-            mock_process.assert_has_calls([mock.call(), mock.call(),
-                                           mock.call(), mock.call()])
+            self.assertEqual(2, len(res))
+            mock_process.assert_has_calls([mock.call(), mock.call()])
         else:
+            self.assertEqual(2, len(res))
             mock_process.assert_not_called()
 
     def test_generate_format_unprocess(self):

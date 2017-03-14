@@ -26,7 +26,8 @@ LOG = logging.getLogger(__name__)
 
 
 class ArticleException(Exception):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(ArticleException, self).__init__(*args, **kwargs)
 
 
 class Article(base_article.Article):
@@ -44,7 +45,7 @@ class Article(base_article.Article):
 
     def parse(self):
         if not self.is_downloaded:
-            raise ArticleException()
+            raise ArticleException(self)
 
         self.doc = self.config.get_parser().fromstring(self.html)
         self.clean_doc = copy.deepcopy(self.doc)
@@ -110,14 +111,14 @@ class Article(base_article.Article):
     def from_format(self, template):
         if not template or not isinstance(template, Article) or \
                 not self.is_downloaded:
-            raise ArticleException()
+            raise ArticleException(self)
 
         self.doc = self.config.get_parser().fromstring(self.html)
         self.clean_doc = copy.deepcopy(self.doc)
 
         if self.doc is None:
             # `parse` call failed, return nothing
-            raise ArticleException()
+            raise ArticleException(self)
 
         parser = self.config.get_parser()
         if template.title:
@@ -226,25 +227,32 @@ class Source(source.Source):
             return candidates
 
         # Detect format for each domain
-        for domain in candidates:
-            while True:
-                try:
-                    if process_all:
-                        # NOTE(hieulq): not test this block
-                        for key, values in candidates.items():
-                            for value in values:
-                                value.process()
-                    elif len(candidates[domain]) > 0:
-                        candidates[domain][0].process()
-                except ArticleException:
-                    LOG.error("Cannot process article with url %s" %
-                              candidates[domain][0].url)
-                    if not process_all:
+        if process_all:
+            for key, values in candidates.items():
+                for value in values:
+                    try:
+                        value.process()
+                    except ArticleException:
+                        LOG.error("Cannot process article with url %s" %
+                                  value.url)
+                        continue
+        else:
+            for domain in list(candidates):
+                while True:
+                    try:
+                        if len(candidates[domain]) > 0:
+                            candidates[domain][0].process()
+                        else:
+                            break
+                    except ArticleException:
+                        LOG.error("Cannot process article with url %s" %
+                                  candidates[domain][0].url)
                         del candidates[domain][0]
-                    if len(candidates[domain]) < 1:
-                        del candidates[domain]
-                    continue
-                break
+                        if len(candidates[domain]) < 1:
+                            del candidates[domain]
+                            break
+                        continue
+                    break
 
         return candidates
 

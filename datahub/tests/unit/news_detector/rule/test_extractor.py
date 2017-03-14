@@ -350,11 +350,13 @@ class RuleExtractorTestCase(base.TestCase):
     @mock.patch.object(Parser, 'getElementsByTag')
     def test_get_publishing_date_fail(self, mock_get_tag, mock_get_attr):
         mock_get_tag.return_value = [self.fake_meta_data]
-        mock_get_attr.return_value = '2017-13'
+        mock_get_attr.return_value = None
         res = self.extractor.get_publishing_date('fake_url', self.doc)
         self.assertEqual('', res)
         mock_get_tag.assert_has_calls([
             mock.call(self.doc, attr='property', value='rnews:datePublished'),
+            mock.call(self.doc, attr='property',
+                      value='article:modified_time'),
             mock.call(self.doc, attr='property',
                       value='article:published_time'),
             mock.call(self.doc, attr='name', value='OriginalPublicationDate'),

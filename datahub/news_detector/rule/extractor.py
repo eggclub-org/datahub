@@ -11,7 +11,7 @@
 # under the License.
 
 from collections import defaultdict
-from dateutil.parser import parse as date_parser
+# from dateutil.parser import parse as date_parser
 from newspaper import extractors
 from newspaper.videos import extractors as ve
 import re
@@ -355,17 +355,21 @@ class Extractor(extractors.ContentExtractor):
         3. Raw regex searches in the HTML + added heuristics
         """
 
-        def parse_date_str(date_str):
-            try:
-                datetime_obj = date_parser(date_str)
-                return datetime_obj
-            except ValueError:
-                # near all parse failures are due to URL dates without a day
-                # specifier, e.g. /2014/04/
-                return None
+        # NOTE(hieulq): unused this method because of VNese article datetime
+        # format is varied.
+        # def parse_date_str(date_str):
+        #     try:
+        #         datetime_obj = date_parser(date_str)
+        #         return datetime_obj
+        #     except ValueError:
+        #         # near all parse failures are due to URL dates without a day
+        #         # specifier, e.g. /2014/04/
+        #         return None
 
         PUBLISH_DATE_TAGS = [
             {'attribute': 'property', 'value': 'rnews:datePublished',
+             'content': 'content'},
+            {'attribute': 'property', 'value': 'article:modified_time',
              'content': 'content'},
             {'attribute': 'property', 'value': 'article:published_time',
              'content': 'content'},
@@ -392,13 +396,13 @@ class Extractor(extractors.ContentExtractor):
                 attr=known_meta_tag['attribute'],
                 value=known_meta_tag['value'])
             if meta_tags:
-                datetime_obj = None
+                # datetime_obj = None
                 date_str = self.parser.getAttribute(
                     meta_tags[0].ele,
                     known_meta_tag['content'])
                 if date_str:
-                    datetime_obj = parse_date_str(date_str)
-                if datetime_obj:
+                    # datetime_obj = parse_date_str(date_str)
+                    # if datetime_obj:
                     return meta_tags[0].xpath + '/@' + \
                            known_meta_tag['content']
 
