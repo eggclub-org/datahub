@@ -27,7 +27,7 @@ DOMAIN_PATH = "./data/targets"
 LOG = logging.getLogger(__name__)
 
 
-class TestRuleDetector(base.BaseTestCase):
+class TestRuleDetector(base.TestCase):
 
     def setUp(self):
         super(TestRuleDetector, self).setUp()
@@ -72,9 +72,30 @@ class TestRuleDetector(base.BaseTestCase):
                                       "%s \n" % (str(art), str(template)))
                             continue
                 if outs:
-                    for out in outs:
-                        LOG.info('==============')
-                        LOG.info(str(out))
+                    total = 0
+                    title = 0
+                    date = 0
+                    content = 0
+                    authors = 0
+                    for domain, articles in outs.items():
+                        total += len(articles)
+                        for art in articles:
+                            if art.title:
+                                title += 1
+                            if art.publish_date:
+                                date += 1
+                            if art.text:
+                                content += 1
+                            if art.authors:
+                                authors += 1
+                            LOG.error('==============')
+                            LOG.error(str(art))
+                    LOG.error('========RESULT======')
+                    LOG.error("Total articles: %d" % total)
+                    LOG.error("Total title: %d" % title)
+                    LOG.error("Total date: %d" % date)
+                    LOG.error("Total content: %d" % content)
+                    LOG.error("Total authors: %d" % authors)
             except fixtures.TimeoutException:
                 LOG.error("Cannot process source with url %s" %
                           source.url)
