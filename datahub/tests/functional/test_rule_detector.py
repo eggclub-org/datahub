@@ -41,6 +41,11 @@ class TestRuleDetector(base.TestCase):
         with open(DOMAIN_PATH) as f:
             tars = f.readlines()
         targets = [target.strip() for target in tars]
+        total = 0
+        title = 0
+        date = 0
+        content = 0
+        authors = 0
         for target in targets:
             try:
                 source = article.Source(target, config=self.config,
@@ -72,11 +77,6 @@ class TestRuleDetector(base.TestCase):
                                       "%s \n" % (str(art), str(template)))
                             continue
                 if outs:
-                    total = 0
-                    title = 0
-                    date = 0
-                    content = 0
-                    authors = 0
                     for domain, articles in outs.items():
                         total += len(articles)
                         for art in articles:
@@ -90,16 +90,16 @@ class TestRuleDetector(base.TestCase):
                                 authors += 1
                             LOG.error('==============')
                             LOG.error(str(art))
-                    LOG.error('========RESULT======')
-                    LOG.error("Total articles: %d" % total)
-                    LOG.error("Total title: %d" % title)
-                    LOG.error("Total date: %d" % date)
-                    LOG.error("Total content: %d" % content)
-                    LOG.error("Total authors: %d" % authors)
             except fixtures.TimeoutException:
                 LOG.error("Cannot process source with url %s" %
                           source.url)
                 continue
+        LOG.error('========RESULT======')
+        LOG.error("Total articles: %d" % total)
+        LOG.error("Total title: %d" % title)
+        LOG.error("Total date: %d" % date)
+        LOG.error("Total content: %d" % content)
+        LOG.error("Total authors: %d" % authors)
 
     def test_single_source(self):
         url = "http://www.baotainguyenmoitruong.vn/kinh-te/" \
