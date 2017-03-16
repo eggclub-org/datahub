@@ -29,7 +29,6 @@ try:
     log.register_options(CONF)
 except CONF.ArgsAlreadyParsedError:
     pass
-CONF.set_override('use_stderr', False)
 
 
 class BaseTestCase(testscenarios.WithScenarios, base.BaseTestCase):
